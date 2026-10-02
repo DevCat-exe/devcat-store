@@ -20,8 +20,8 @@ function sign(expiresAt: string): string {
 
 export function verifyAdminPassword(password: unknown): boolean {
   const expected = process.env.ADMIN_PASSWORD;
-  if (!expected || expected.length < 16) {
-    throw new Error("ADMIN_PASSWORD must be configured with at least 16 characters.");
+  if (!expected || expected.length < 15) {
+    throw new Error("ADMIN_PASSWORD must be configured with at least 15 characters.");
   }
   if (typeof password !== "string" || password.length > 512) return false;
   const expectedDigest = createHash("sha256").update(expected).digest();
@@ -61,7 +61,16 @@ export function isSameOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
   if (!origin) return false;
   try {
-    return new URL(origin).origin === new URL(request.url).origin;
+    const originUrl = new URL(origin);
+    const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+    const host = forwardedHost || request.headers.get("host");
+    const forwardedProtocol = request.headers
+      .get("x-forwarded-proto")
+      ?.split(",")[0]
+      ?.trim();
+    const protocol = forwardedProtocol || new URL(request.url).protocol.replace(/:$/, "");
+    if (!host || (protocol !== "http" && protocol !== "https")) return false;
+    return originUrl.origin === new URL(`${protocol}://${host}`).origin;
   } catch {
     return false;
   }
