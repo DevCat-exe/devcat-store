@@ -254,6 +254,17 @@ try {
           sizeBytes,
           fdroidUrl: new URL(encodeURIComponent(item.apkName), `${repoUrl}/`).toString(),
           fdroidSizeBytes: sizeBytes,
+          assets: [{
+            name: item.apkName,
+            url: new URL(encodeURIComponent(item.apkName), `${repoUrl}/`).toString(),
+            size: sizeBytes,
+            downloadCount: 0,
+            source: "fdroid",
+            sha256:
+              typeof item.hash === "string" && /^[a-f0-9]{64}$/i.test(item.hash)
+                ? item.hash.toLowerCase()
+                : "",
+          }],
           fdroidSha256:
             typeof item.hash === "string" && /^[a-f0-9]{64}$/i.test(item.hash)
               ? item.hash.toLowerCase()
@@ -284,6 +295,10 @@ try {
         fdroidUrl: entry.fdroidUrl,
         fdroidSizeBytes: entry.fdroidSizeBytes,
         fdroidSha256: entry.fdroidSha256,
+        assets: [
+          ...(previous?.assets ?? []).filter((asset) => asset.source !== "fdroid"),
+          ...entry.assets,
+        ],
         sizeBytes: previous?.sizeBytes || entry.sizeBytes,
         versionCode: previous?.versionCode || entry.versionCode,
       });

@@ -93,8 +93,8 @@ import "../styles/global.css";
               <label class="admin-label admin-span-two" for="screenshots">Screenshots <span>one URL per line</span>
                 <textarea class="admin-input" id="screenshots" name="screenshots" rows="4" placeholder="https://your-fdroid-repo/.../screenshot.png"></textarea>
               </label>
-              <label class="admin-label admin-span-two" for="downloadUrl">Direct download URL
-                <input class="admin-input" id="downloadUrl" name="downloadUrl" maxlength="2000" placeholder="GitHub release, APK, or installer" />
+              <label class="admin-label admin-span-two" for="downloadUrl">Fallback download URL <span>Optional; use when this app has no synced releases</span>
+                <input class="admin-input" id="downloadUrl" name="downloadUrl" maxlength="2000" placeholder="Direct APK, installer, or stable download page" />
               </label>
               <label class="admin-checkbox admin-span-two">
                 <input id="availableOnFdroid" name="availableOnFdroid" type="checkbox" />
@@ -115,9 +115,14 @@ import "../styles/global.css";
               <label class="admin-label" for="androidMinVersion">Minimum Android version
                 <input class="admin-input" id="androidMinVersion" name="androidMinVersion" maxlength="80" placeholder="Android 8.0+" />
               </label>
-              <label class="admin-label" for="permissions">Permissions <span>one per line</span>
-                <textarea class="admin-input" id="permissions" name="permissions" rows="3"></textarea>
-              </label>
+              <fieldset class="admin-choice-fieldset admin-span-two">
+                <legend>Android permissions <span>Select what this app may access</span></legend>
+                <p class="admin-help">Choose the permissions requested by the app. For exact store metadata, the F-Droid sync can populate this list automatically.</p>
+                <div id="app-permission-choices" class="admin-choice-list"></div>
+                <label class="admin-label mt-3" for="permission-custom">Other permissions <span>Optional; one permission identifier per line</span>
+                  <textarea class="admin-input admin-mono" id="permission-custom" name="permission-custom" rows="2" placeholder="android.permission.SCHEDULE_EXACT_ALARM"></textarea>
+                </label>
+              </fieldset>
               <label class="admin-label admin-span-two" for="privacyPolicy">Privacy policy
                 <textarea class="admin-input" id="privacyPolicy" name="privacyPolicy" rows="5" maxlength="20000"></textarea>
               </label>
@@ -201,9 +206,31 @@ import "../styles/global.css";
       const platformSettingsList = document.querySelector<HTMLElement>("#platform-settings-list");
       const appPlatformChoices = document.querySelector<HTMLElement>("#app-platform-choices");
       const appCategoryChoices = document.querySelector<HTMLElement>("#app-category-choices");
+      const appPermissionChoices = document.querySelector<HTMLElement>("#app-permission-choices");
+      const customPermissionsField = document.querySelector<HTMLTextAreaElement>("#permission-custom");
       const newCategoryField = document.querySelector<HTMLInputElement>("#new-category");
       const catalogOptionsStatus = document.querySelector<HTMLElement>("#catalog-options-status");
       const platformChoices = ["android", "windows", "macos", "linux", "web", "ios"];
+      const permissionChoices = [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "CAMERA",
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "POST_NOTIFICATIONS",
+        "READ_CONTACTS",
+        "READ_CALENDAR",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES",
+        "READ_MEDIA_VIDEO",
+        "READ_MEDIA_AUDIO",
+        "REQUEST_INSTALL_PACKAGES",
+        "BLUETOOTH_CONNECT",
+        "VIBRATE",
+        "WAKE_LOCK",
+      ];
       let catalogSettings = {
         categories: ["Money", "Tools", "Productivity", "Health", "Education", "Travel", "Lifestyle", "Games", "Media", "Security", "Communication"],
         platforms: [...platformChoices],
@@ -236,8 +263,14 @@ import "../styles/global.css";
             web: "Web",
             ios: "iOS",
           };
-          text.textContent = platformLabels[value.toLowerCase()] ??
-            value.replace(/\b\w/g, (letter) => letter.toUpperCase());
+          text.textContent =
+            platformLabels[value.toLowerCase()] ??
+            value
+              .split(".")
+              .at(-1)!
+              .replaceAll("_", " ")
+              .toLowerCase()
+              .replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
           label.append(input, text);
           container.append(label);
         }
@@ -246,6 +279,15 @@ import "../styles/global.css";
       const checkedValues = (container: HTMLElement | null) =>
         Array.from(container?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]:checked') ?? [])
           .map((input) => input.value);
+
+      const renderPermissionChoices = (selectedPermissions: string[] = []) => {
+        renderChoiceCheckboxes(
+          appPermissionChoices,
+          "app-permission",
+          permissionChoices,
+          selectedPermissions,
+        );
+      };
 
       const renderAppChoices = (selectedPlatforms: string[] = [], selectedCategories: string[] = []) => {
         renderChoiceCheckboxes(
@@ -324,6 +366,7 @@ import "../styles/global.css";
       const resetEditor = () => {
         appForm?.reset();
         renderAppChoices();
+        renderPermissionChoices();
         if (editorPanel) editorPanel.hidden = true;
         if (slugField) slugField.readOnly = false;
         if (editorTitle) editorTitle.textContent = "Add an app";
@@ -335,10 +378,19 @@ import "../styles/global.css";
         resetEditor();
         if (editorPanel) editorPanel.hidden = false;
         renderAppChoices(app.platforms, app.categories);
+        const knownPermissions = app.permissions.filter((permission) =>
+          permissionChoices.includes(permission),
+        );
+        renderPermissionChoices(knownPermissions);
+        if (customPermissionsField) {
+          customPermissionsField.value = app.permissions
+            .filter((permission) => !permissionChoices.includes(permission))
+            .join("\n");
+        }
         for (const name of [
           "slug", "name", "summary", "description", "license",
           "icon", "screenshots", "downloadUrl", "playStoreUrl",
-          "sourceUrl", "githubRepo", "fdroidPackageName", "androidMinVersion", "permissions", "privacyPolicy",
+          "sourceUrl", "githubRepo", "fdroidPackageName", "androidMinVersion", "privacyPolicy",
         ]) {
           const target = field<HTMLInputElement | HTMLTextAreaElement>(name);
           if (!target) continue;
@@ -566,7 +618,10 @@ import "../styles/global.css";
           githubRepo: value("githubRepo"),
           fdroidPackageName: value("fdroidPackageName"),
           androidMinVersion: value("androidMinVersion"),
-          permissions: lines("permissions"),
+          permissions: [...new Set([
+            ...checkedValues(appPermissionChoices),
+            ...lines("permission-custom"),
+          ])],
           privacyPolicy: value("privacyPolicy"),
           isFeatured: field<HTMLInputElement>("isFeatured")?.checked ?? false,
         };

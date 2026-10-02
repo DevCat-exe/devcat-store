@@ -6,6 +6,7 @@ export interface ReleaseAsset {
   size: number;
   downloadCount: number;
   sha256: string;
+  source?: "github" | "fdroid";
 }
 
 export interface ReleaseHistoryEntry {
@@ -23,6 +24,7 @@ export interface ReleaseHistoryEntry {
   fdroidUrl?: string;
   fdroidSizeBytes?: number;
   fdroidSha256?: string;
+  assets?: ReleaseAsset[];
 }
 
 export interface AppRecord {

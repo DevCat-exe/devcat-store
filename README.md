@@ -65,7 +65,7 @@ The app form supports:
 - Searchable category tags; catalog category filters are generated from the apps you publish
 - Direct downloads, Google Play, and source links
 - Category tags and platform selections from the catalog settings
-- Android minimum version, permissions, and privacy policy
+- Android minimum version, selectable common permissions (with an optional field for other identifiers), and privacy policy
 - Featured home-page listing and optional GitHub release source
 
 Screenshot fields accept one URL or path per line. App pages and privacy pages use the slug, for example `/apps/quick-insure` and `/privacy/quick-insure`. To publish a policy, enter its text in the app editor. The site-wide appearance switch remembers a visitor's dark/light preference. Public visitors can only read catalog entries; create, edit, and delete operations require the admin session.
@@ -81,7 +81,7 @@ $env:GITHUB_TOKEN = "optional-token-for-higher-github-api-limits"
 npm run sync:releases
 ```
 
-For apps in the shared F-Droid repository, set the F-Droid package ID in the editor. Run `npm run sync:fdroid` to import repository categories, Android minimum version, permissions, screenshots, APK checksums, and available changelogs. Run `npm run sync:releases` to import GitHub tags, notes, dates, installable assets, file sizes, download counts, and SHA-256 digests. Release asset names also add detected platforms (for example, APK assets add Android and Windows installers add Windows). The sync uses GitHub’s digest or a published checksum file when available; otherwise it streams the primary download (up to 512 MiB) to calculate a checksum. It does not fabricate a checksum when a download is too large or unavailable. The app detail page previews recent releases, lets visitors expand older versions, and keeps F-Droid APK checksums separate from GitHub file checksums.
+For apps in the shared F-Droid repository, set the F-Droid package ID in the editor. Run `npm run sync:fdroid` to import repository categories, Android minimum version, permissions, screenshots, APK checksums, and available changelogs. Run `npm run sync:releases` to import GitHub tags, notes, dates, installable assets, file sizes, download counts, and SHA-256 digests. Release asset names also add detected platforms (for example, APK assets add Android and Windows installers add Windows). The sync uses GitHub’s digest or a published checksum file when available; otherwise it streams the primary download (up to 512 MiB) to calculate a checksum. It does not fabricate a checksum when a download is too large or unavailable. The app detail page sends its Download button to a platform-grouped list of available files for the latest version, with older versions expandable below; F-Droid APK checksums remain separate from GitHub file checksums.
 
 To enable the scheduled GitHub Actions workflow, add repository Actions secrets `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`. Then run **Actions → Sync app releases → Run workflow** once to test. The workflow syncs F-Droid metadata first and GitHub releases second, and repeats every six hours. GitHub’s read-only workflow token is used for public release metadata; an optional `GITHUB_TOKEN` override is not needed in Actions.
 

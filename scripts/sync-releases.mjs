@@ -175,6 +175,22 @@ async function syncApp(app) {
       item.assets.filter(isInstallableAsset),
       app.platforms,
     );
+    const githubAssets = item.assets
+      .filter(isInstallableAsset)
+      .map((asset) => ({
+        name: asset.name,
+        url: asset.browser_download_url,
+        size: Number(asset.size) || 0,
+        downloadCount: Number(asset.download_count) || 0,
+        source: "github",
+        sha256:
+          typeof asset.digest === "string" && asset.digest.startsWith("sha256:")
+            ? asset.digest.slice(7).toLowerCase()
+            : (previous?.assets ?? []).find(
+                (existing) =>
+                  existing.source === "github" && existing.name === asset.name,
+              )?.sha256 ?? "",
+      }));
     historyByVersion.set(key, {
       ...previous,
       version,
@@ -199,6 +215,10 @@ async function syncApp(app) {
           : "") ||
         previous?.githubSha256 ||
         "",
+      assets: [
+        ...(previous?.assets ?? []).filter((asset) => asset.source !== "github"),
+        ...githubAssets,
+      ],
     });
   }
   const releaseHistory = [...historyByVersion.values()].sort((a, b) => {
@@ -228,6 +248,15 @@ async function syncApp(app) {
       downloadCount: asset.download_count,
       sha256,
     });
+  }
+  const latestHistory = historyByVersion.get(
+    String(release.tag_name ?? "").replace(/^v/i, "").toLowerCase(),
+  );
+  if (latestHistory) {
+    latestHistory.assets = [
+      ...(latestHistory.assets ?? []).filter((asset) => asset.source !== "github"),
+      ...releaseAssets.map((asset) => ({ ...asset, source: "github" })),
+    ];
   }
 
   const publishedAt = release.published_at ?? "";
