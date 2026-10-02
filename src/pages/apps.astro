@@ -1,0 +1,134 @@
+---
+import { Search } from "@lucide/astro";
+import AppCard from "../components/AppCard.astro";
+import Header from "../components/Header.astro";
+import { formatPlatformLabel, getApps, type AppRecord } from "../lib/apps";
+import "../styles/global.css";
+
+let apps: AppRecord[] = [];
+let catalogError = "";
+
+try {
+  apps = await getApps();
+} catch (error) {
+  console.error("Unable to load the Devcat app catalog:", error);
+  Astro.response.status = 503;
+  catalogError = "The app catalog is temporarily unavailable. Please try again shortly.";
+}
+const categories = [...new Set(apps.flatMap((app) => app.categories))].sort();
+const platforms = [...new Set(apps.flatMap((app) => app.platforms))].sort();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Browse apps from Devcat with clear descriptions, download choices, and privacy details." />
+    <meta name="theme-color" content="#f7f8f6" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <title>Explore apps — Devcat</title>
+  </head>
+  <body>
+    <Header currentPath="/apps" />
+    <main class="page-main">
+      <section class="page-intro">
+        <span class="eyebrow"><span class="eyebrow-dot"></span> The Devcat collection</span>
+        <h1>Find an app for <span>your everyday.</span></h1>
+        <p>Friendly tools with straightforward details and download options.</p>
+      </section>
+
+      <section class="catalog-section" aria-label="App catalog">
+        <div class="catalog-toolbar">
+          <label class="search-field">
+            <Search class="size-5 shrink-0 text-slate-400" aria-hidden="true" />
+            <span class="sr-only">Search apps</span>
+            <input id="app-search" type="search" placeholder="Search apps by name, category or version" autocomplete="off" />
+            <kbd>Ctrl K</kbd>
+          </label>
+          <div class="filter-list" role="group" aria-label="Filter apps by category or platform">
+            <button class="filter-button is-active" type="button" data-filter="all" aria-pressed="true">All apps</button>
+            {categories.map((category) => <button class="filter-button" type="button" data-filter={`category:${category.toLowerCase()}`} aria-pressed="false">{category}</button>)}
+            {platforms.map((platform) => <button class="filter-button" type="button" data-filter={`platform:${platform.toLowerCase()}`} aria-pressed="false">{formatPlatformLabel(platform)}</button>)}
+          </div>
+        </div>
+        <div class="catalog-count">
+          <p><strong id="visible-count">{apps.length}</strong> {apps.length === 1 ? "app" : "apps"} to explore</p>
+          <p>Listed alphabetically</p>
+        </div>
+
+        {
+          catalogError ? (
+            <div class="catalog-alert" role="alert">{catalogError}</div>
+          ) : apps.length ? (
+            <>
+              <div id="apps-grid" class="app-grid">
+                {apps.map((app) => <AppCard app={app} />)}
+              </div>
+              <p id="empty-results" class="empty-state" hidden>No apps match that search. Try a different name or filter.</p>
+            </>
+          ) : (
+            <div class="empty-state">No apps have been published yet.</div>
+          )
+        }
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="site-footer-inner">
+        <a class="brand" href="/"><span class="brand-mark">D</span><span>Devcat<span class="brand-dot">.</span></span></a>
+        <p>Small, thoughtful software for everyday life.</p>
+        <nav aria-label="Footer navigation"><a href="/privacy">Privacy policies</a><a href="/fdroid">F-Droid guide</a></nav>
+      </div>
+    </footer>
+    <script>
+      const search = document.querySelector<HTMLInputElement>("#app-search");
+      const cards = Array.from(document.querySelectorAll<HTMLElement>(".app-card"));
+      const count = document.querySelector<HTMLElement>("#visible-count");
+      const emptyState = document.querySelector<HTMLElement>("#empty-results");
+      let activeFilter = "all";
+
+      const updateCards = () => {
+        const term = search?.value.trim().toLowerCase() ?? "";
+        let visible = 0;
+
+        for (const card of cards) {
+          const platforms = (card.dataset.platforms ?? "").split("|");
+          const categories = (card.dataset.categories ?? "").split("|");
+          const matches = (card.dataset.search ?? "").includes(term);
+          const [filterKind, filterValue] = activeFilter.split(":", 2);
+          const matchesFilter =
+            activeFilter === "all" ||
+            (filterKind === "category"
+              ? categories.includes(filterValue)
+              : platforms.includes(filterValue));
+          const show = matches && matchesFilter;
+          card.hidden = !show;
+          if (show) visible += 1;
+        }
+
+        if (count) count.textContent = String(visible);
+        if (emptyState) emptyState.hidden = visible !== 0;
+      };
+
+      search?.addEventListener("input", updateCards);
+      document.querySelectorAll<HTMLButtonElement>(".filter-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          activeFilter = button.dataset.filter ?? "all";
+          document.querySelectorAll(".filter-button").forEach((item) => {
+            const active = item === button;
+            item.classList.toggle("is-active", active);
+            item.setAttribute("aria-pressed", String(active));
+          });
+          updateCards();
+        });
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.ctrlKey && event.key.toLowerCase() === "k") {
+          event.preventDefault();
+          search?.focus();
+        }
+      });
+    </script>
+  </body>
+</html>

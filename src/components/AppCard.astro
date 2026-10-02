@@ -1,0 +1,112 @@
+---
+import { ArrowUpRight, Download, Smartphone } from "@lucide/astro";
+import { formatPlatformLabel, type AppRecord } from "../lib/apps";
+
+const { app } = Astro.props as { app: AppRecord };
+const directDownload = app.downloadUrl || app.releaseAssets[0]?.url;
+---
+
+<article
+  class="app-card group flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_2px_10px_rgba(18,35,32,0.04)] transition duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_16px_38px_rgba(18,35,32,0.10)]"
+  data-platforms={app.platforms.join("|").toLowerCase()}
+  data-categories={app.categories.join("|").toLowerCase()}
+  data-search={`${app.name} ${app.summary} ${app.platforms.join(" ")} ${app.categories.join(" ")} ${app.version}`.toLowerCase()}
+>
+  <div class="flex items-start gap-4">
+    <a
+      href={`/apps/${app.slug}`}
+      class="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#f2f6f4] ring-1 ring-slate-900/5"
+      aria-label={`View ${app.name}`}
+    >
+      {
+        app.icon ? (
+          <img
+            src={app.icon}
+            alt=""
+            class="size-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <Smartphone class="size-7 text-primary" aria-hidden="true" />
+        )
+      }
+    </a>
+    <div class="min-w-0 flex-1">
+      <div class="flex items-start justify-between gap-2">
+        <h2 class="truncate text-lg font-bold tracking-tight text-slate-900">
+          <a href={`/apps/${app.slug}`} class="hover:text-primary">
+            {app.name}
+          </a>
+        </h2>
+        {app.isFeatured && <span class="eyebrow-chip">Featured</span>}
+      </div>
+      <p class="mt-1 text-xs font-medium text-slate-500">
+        {app.version ? `Version ${app.version}` : "App listing"}
+        {app.license && ` · ${app.license}`}
+      </p>
+      <div class="mt-2 flex flex-wrap gap-1.5">
+        {
+          app.platforms.map((platform) => (
+            <span class="platform-chip">{formatPlatformLabel(platform)}</span>
+          ))
+        }
+        {
+          app.categories.map((category) => (
+            <span class="category-chip">{category}</span>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+
+  <p class="mt-5 min-h-12 flex-1 text-sm leading-6 text-slate-600">
+    {app.summary || "Explore the app and its latest release details."}
+  </p>
+
+  <div class="mt-5 flex flex-wrap gap-2">
+    {
+      directDownload && (
+        <a
+          href={directDownload}
+          class="button-primary"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Download class="size-4" aria-hidden="true" />
+          Direct download
+        </a>
+      )
+    }
+    {
+      app.playStoreUrl && (
+        <a
+          href={app.playStoreUrl}
+          class="button-secondary"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Google Play
+          <ArrowUpRight class="size-4" aria-hidden="true" />
+        </a>
+      )
+    }
+    {
+      !directDownload && !app.playStoreUrl && (
+        <a href={`/apps/${app.slug}`} class="button-secondary">
+          Explore app
+          <ArrowUpRight class="size-4" aria-hidden="true" />
+        </a>
+      )
+    }
+  </div>
+  {
+    app.availableOnFdroid && (
+      <a
+        href="/fdroid"
+        class="mt-3 inline-flex w-fit items-center gap-1 text-xs font-semibold text-slate-500 hover:text-primary"
+      >
+      Get through F-Droid <ArrowUpRight class="size-3" aria-hidden="true" />
+      </a>
+    )
+  }
+</article>

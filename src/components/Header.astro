@@ -1,0 +1,71 @@
+---
+import { ArrowUpRight, Moon, PackageCheck, Sun } from "@lucide/astro";
+
+export interface Props {
+  title?: string;
+  currentPath?: string;
+}
+
+const { currentPath = "/" } = Astro.props;
+const isAppsPage = currentPath.startsWith("/apps");
+---
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <a href="/" class="brand" aria-label="Devcat home">
+      <span class="brand-mark"><PackageCheck class="size-5" aria-hidden="true" /></span>
+      <span>Devcat<span class="brand-dot">.</span></span>
+    </a>
+    <nav class="site-nav" aria-label="Main navigation">
+      <a href="/apps" class:list={[{ "nav-active": isAppsPage }]}>Explore apps</a>
+      <a href="/fdroid" class:list={[{ "nav-active": currentPath === "/fdroid" }]}>F-Droid guide</a>
+      <a href="https://github.com/DevCat-exe" target="_blank" rel="noopener noreferrer">
+        GitHub <ArrowUpRight class="size-3.5" aria-hidden="true" />
+      </a>
+    </nav>
+    <div class="header-actions">
+      <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark mode">
+        <Moon class="size-4 icon-moon" aria-hidden="true" />
+        <Sun class="size-4 icon-sun" aria-hidden="true" />
+      </button>
+      <a class="header-action" href="/apps">Find your next app <span aria-hidden="true">↗</span></a>
+    </div>
+  </div>
+</header>
+
+<script is:inline>
+  (() => {
+    const applyTheme = (theme) => {
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.classList.toggle("dark", theme === "dark");
+      document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+        button.setAttribute(
+          "aria-label",
+          theme === "dark" ? "Switch to light mode" : "Switch to dark mode",
+        );
+      });
+    };
+
+    try {
+      const stored = localStorage.getItem("devcat-theme");
+      applyTheme(stored === "dark" ? "dark" : "light");
+    } catch {
+      applyTheme("light");
+    }
+
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element) || !target.closest("[data-theme-toggle]")) {
+        return;
+      }
+      const theme =
+        document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      applyTheme(theme);
+      try {
+        localStorage.setItem("devcat-theme", theme);
+      } catch {
+        // Theme still works for this page if browser storage is unavailable.
+      }
+    });
+  })();
+</script>

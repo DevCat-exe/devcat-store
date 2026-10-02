@@ -1,0 +1,122 @@
+---
+import { ArrowRight, BadgeCheck, HeartHandshake, PackageCheck, ShieldCheck } from "@lucide/astro";
+import AppCard from "../components/AppCard.astro";
+import Header from "../components/Header.astro";
+import { getApps, type AppRecord } from "../lib/apps";
+import "../styles/global.css";
+
+let apps: AppRecord[] = [];
+let catalogError = "";
+
+try {
+  apps = await getApps();
+} catch (error) {
+  console.error("Unable to load the Devcat app catalog:", error);
+  Astro.response.status = 503;
+  catalogError = "The app catalog is temporarily unavailable. Please try again shortly.";
+}
+
+const featuredApps = apps.filter((app) => app.isFeatured).slice(0, 3);
+const appHighlights = featuredApps.length ? featuredApps : apps.slice(0, 3);
+const heroApp = appHighlights[0];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Discover useful apps from Devcat. Clear details, trusted download links, and privacy information in one place." />
+    <meta name="theme-color" content="#f7f8f6" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <title>Devcat — Apps made with care</title>
+  </head>
+  <body>
+    <Header currentPath="/" />
+    <main>
+      <section class="home-hero">
+        <div class="home-hero-copy">
+          <span class="eyebrow"><span class="eyebrow-dot"></span> Thoughtful software, from Devcat</span>
+          <h1>Good apps should feel <span>good to use.</span></h1>
+          <p>
+            Find practical apps made with care. Explore what they do, understand
+            how they handle your data, and choose where you want to download.
+          </p>
+          <div class="hero-actions">
+            <a class="button-primary button-large" href="/apps">
+              Browse all apps <ArrowRight class="size-4" aria-hidden="true" />
+            </a>
+            <a class="text-link" href="#featured">See what’s new <span aria-hidden="true">↓</span></a>
+          </div>
+          <div class="trust-row" aria-label="Our values">
+            <span><ShieldCheck class="size-4" aria-hidden="true" /> Privacy information up front</span>
+            <span><HeartHandshake class="size-4" aria-hidden="true" /> Built for real people</span>
+          </div>
+        </div>
+        <div class="hero-art" aria-label="Featured app preview">
+          <div class="hero-orbit orbit-one"></div>
+          <div class="hero-orbit orbit-two"></div>
+          <div class="hero-app-card">
+            <div class="hero-app-top"><span>{heroApp ? "DEVcat app pick" : "THE DEVCAT COLLECTION"}</span><BadgeCheck class="size-4" aria-hidden="true" /></div>
+            {heroApp?.icon ? (
+              <img src={heroApp.icon} alt="" class="hero-app-icon" />
+            ) : (
+              <div class="hero-app-icon hero-app-placeholder" aria-hidden="true"><PackageCheck class="size-8" /></div>
+            )}
+            <p class="hero-app-name">{heroApp?.name ?? "Apps made with care"}</p>
+            <p class="hero-app-caption">{heroApp?.summary ?? "Practical software for everyday life."}</p>
+            <div class="hero-app-pill"><span></span>{heroApp?.platforms.join(", ") || "Explore the collection"}</div>
+          </div>
+          <span class="hero-note note-one">Made for everyday life</span>
+          <span class="hero-note note-two">Straightforward by design</span>
+        </div>
+      </section>
+
+      <section class="value-strip" aria-label="App marketplace benefits">
+        <div><span class="value-number">{apps.length.toString().padStart(2, "0")}</span><span>apps to explore</span></div>
+        <div><span class="value-icon">01</span><span>Clear, useful app details</span></div>
+        <div><span class="value-icon">02</span><span>Your choice of download source</span></div>
+        <div><span class="value-icon">03</span><span>Privacy details, not guesswork</span></div>
+      </section>
+
+      <section id="featured" class="section-block">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">A good place to start</span>
+            <h2>Apps worth a closer look</h2>
+          </div>
+          <a class="text-link" href="/apps">Explore every app <ArrowRight class="size-4" aria-hidden="true" /></a>
+        </div>
+        {
+          catalogError ? (
+            <div class="catalog-alert" role="alert">{catalogError}</div>
+          ) : appHighlights.length ? (
+            <div class="app-grid">
+              {appHighlights.map((app) => <AppCard app={app} />)}
+            </div>
+          ) : (
+            <div class="empty-state">No apps have been published yet.</div>
+          )
+        }
+      </section>
+
+      <section class="privacy-banner">
+        <div class="privacy-banner-icon"><ShieldCheck class="size-6" aria-hidden="true" /></div>
+        <div>
+          <p class="eyebrow">No surprises</p>
+          <h2>Understand the app before you install it.</h2>
+          <p>Every app has a home for its privacy policy, permissions, and release details.</p>
+        </div>
+        <a class="button-secondary" href="/apps">Explore app details <ArrowRight class="size-4" aria-hidden="true" /></a>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="site-footer-inner">
+        <a class="brand" href="/"><span class="brand-mark"><BadgeCheck class="size-5" aria-hidden="true" /></span><span>Devcat<span class="brand-dot">.</span></span></a>
+        <p>Small, thoughtful software for everyday life.</p>
+        <nav aria-label="Footer navigation"><a href="/apps">Apps</a><a href="/fdroid">F-Droid guide</a><a href="https://github.com/DevCat-exe" target="_blank" rel="noopener noreferrer">GitHub</a></nav>
+      </div>
+    </footer>
+  </body>
+</html>

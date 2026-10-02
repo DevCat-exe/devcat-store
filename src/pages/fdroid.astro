@@ -1,0 +1,80 @@
+---
+import Header from "../components/Header.astro";
+import { getFdroidAddUrl, getSiteSettings } from "../lib/site-settings";
+import QRCode from "qrcode";
+import "../styles/global.css";
+
+export const prerender = false;
+
+const settings = await getSiteSettings();
+const addUrl = getFdroidAddUrl(settings);
+const qrCode = await QRCode.toDataURL(addUrl, {
+  errorCorrectionLevel: "M",
+  margin: 2,
+  width: 280,
+  color: { dark: "#263431", light: "#ffffff" },
+});
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content="Add Devcat's shared F-Droid repository to receive app updates." />
+    <title>F-Droid Setup Guide — Devcat</title>
+  </head>
+  <body>
+    <Header title="F-Droid Setup" currentPath="/fdroid" />
+    <main class="fdroid-page">
+      <section class="fdroid-intro">
+        <span class="eyebrow">One setup, every app</span>
+        <h1>Add Devcat to F-Droid</h1>
+        <p>Scan the code with your Android device to add our shared repository. Apps published there will then appear in F-Droid and receive updates through the client.</p>
+      </section>
+
+      <section class="fdroid-card" aria-labelledby="repo-heading">
+        <div class="fdroid-qr">
+          <img src={qrCode} alt="QR code that adds the Devcat F-Droid repository" width="280" height="280" />
+          <a class="button-primary" href={addUrl}>Open in F-Droid</a>
+        </div>
+        <div class="fdroid-details">
+          <span class="eyebrow">Repository details</span>
+          <h2 id="repo-heading">Add it manually</h2>
+          <p>In F-Droid, open <strong>Settings → Repositories → Add repository</strong>, then enter the address and fingerprint below.</p>
+          <div class="fdroid-field">
+            <span>Repository address</span>
+            <code>{settings.fdroidRepoUrl}</code>
+            <button class="copy-value" type="button" data-copy={settings.fdroidRepoUrl}>Copy address</button>
+          </div>
+          <div class="fdroid-field">
+            <span>Signing fingerprint (SHA-256)</span>
+            <code>{settings.fdroidFingerprint}</code>
+            <button class="copy-value" type="button" data-copy={settings.fdroidFingerprint}>Copy fingerprint</button>
+          </div>
+          <p class="fdroid-note">Only install apps you trust. Android may ask you to allow installs from F-Droid the first time.</p>
+        </div>
+      </section>
+      <p class="fdroid-footer-link">Looking for a specific app? <a href="/apps">Browse the app catalogue <span aria-hidden="true">↗</span></a></p>
+    </main>
+    <script>
+      document.querySelectorAll<HTMLButtonElement>("[data-copy]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const text = button.dataset.copy;
+          if (!text) return;
+          try {
+            await navigator.clipboard.writeText(text);
+            const original = button.textContent;
+            button.textContent = "Copied";
+            window.setTimeout(() => {
+              button.textContent = original;
+            }, 1600);
+          } catch {
+            button.textContent = "Copy unavailable";
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

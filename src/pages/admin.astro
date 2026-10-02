@@ -1,0 +1,656 @@
+---
+import { LockKeyhole, LogOut, Moon, PackagePlus, RefreshCw, Sun } from "@lucide/astro";
+import "../styles/global.css";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#f7f8f6" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <title>App manager — Devcat</title>
+  </head>
+  <body>
+    <header class="admin-header">
+      <a class="brand" href="/"><span class="brand-mark"><LockKeyhole class="size-4" aria-hidden="true" /></span><span>Devcat<span class="brand-dot">.</span></span></a>
+      <div class="header-actions">
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark mode"><Moon class="size-4 icon-moon" aria-hidden="true" /><Sun class="size-4 icon-sun" aria-hidden="true" /></button>
+        <a class="text-link" href="/">Back to website <span aria-hidden="true">↗</span></a>
+      </div>
+    </header>
+    <main class="admin-main">
+      <section id="login-panel" class="admin-login">
+        <div class="privacy-document-icon"><LockKeyhole class="size-6" aria-hidden="true" /></div>
+        <span class="eyebrow">Private area</span>
+        <h1>Welcome back.</h1>
+        <p>Sign in to manage the apps in your collection.</p>
+        <form id="login-form" class="admin-form">
+          <label class="admin-label" for="admin-password">Admin password</label>
+          <input class="admin-input" id="admin-password" type="password" autocomplete="current-password" required />
+          <button class="button-primary button-large" type="submit">Sign in <LockKeyhole class="size-4" aria-hidden="true" /></button>
+        </form>
+      </section>
+
+      <section id="manager-panel" class="admin-manager" hidden>
+        <div class="admin-title-row">
+          <div>
+            <span class="eyebrow"><span class="eyebrow-dot"></span> Your collection</span>
+            <h1>App manager</h1>
+            <p>Add an app, update its details, and the public site changes right away.</p>
+          </div>
+          <div class="admin-title-actions">
+            <button id="new-app-button" class="button-primary" type="button"><PackagePlus class="size-4" aria-hidden="true" /> Add app</button>
+            <button id="logout-button" class="button-secondary" type="button"><LogOut class="size-4" aria-hidden="true" /> Sign out</button>
+          </div>
+        </div>
+
+        <section class="admin-list-panel admin-library">
+          <div class="admin-card-heading">
+            <div><span class="eyebrow">Published</span><h2>Your apps</h2></div>
+            <button id="refresh-apps" class="icon-button" type="button" aria-label="Refresh apps"><RefreshCw class="size-4" aria-hidden="true" /></button>
+          </div>
+          <label class="admin-list-search"><span class="sr-only">Search your apps</span><input id="app-list-search" type="search" placeholder="Find an app…" autocomplete="off" /></label>
+          <div id="app-list" class="admin-app-list"></div>
+          <p id="list-status" class="admin-help" role="status"></p>
+        </section>
+
+        <section id="editor-panel" class="admin-editor" hidden>
+          <div class="admin-card-heading">
+            <div><span class="eyebrow">App details</span><h2 id="editor-title">Add an app</h2></div>
+            <button id="cancel-edit-button" class="button-secondary" type="button">Cancel</button>
+          </div>
+          <p class="admin-help">Use one URL or screenshot per line. Remote artwork can be hosted in your F-Droid or source repository.</p>
+          <form id="app-form" class="admin-form admin-grid">
+              <label class="admin-label" for="slug">Page address <span>lowercase, e.g. quick-insure</span>
+                <input class="admin-input" id="slug" name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="80" />
+              </label>
+              <label class="admin-label" for="name">App name
+                <input class="admin-input" id="name" name="name" required maxlength="120" />
+              </label>
+              <label class="admin-label admin-span-two" for="summary">Short description
+                <input class="admin-input" id="summary" name="summary" maxlength="300" />
+              </label>
+              <label class="admin-label admin-span-two" for="description">About this app
+                <textarea class="admin-input" id="description" name="description" rows="4" maxlength="10000"></textarea>
+              </label>
+              <fieldset class="admin-choice-fieldset">
+                <legend>Platforms <span>Select every platform that has a build</span></legend>
+                <div id="app-platform-choices" class="admin-choice-list"></div>
+              </fieldset>
+              <fieldset class="admin-choice-fieldset">
+                <legend>Categories <span>Select all that fit</span></legend>
+                <div id="app-category-choices" class="admin-choice-list"></div>
+              </fieldset>
+              <label class="admin-label" for="license">License
+                <input class="admin-input" id="license" name="license" maxlength="100" placeholder="GPL-3.0" />
+              </label>
+              <label class="admin-label admin-span-two" for="icon">Icon URL or site path
+                <input class="admin-input" id="icon" name="icon" maxlength="2000" placeholder="https://your-fdroid-repo/.../icon.png" />
+              </label>
+              <label class="admin-label admin-span-two" for="screenshots">Screenshots <span>one URL per line</span>
+                <textarea class="admin-input" id="screenshots" name="screenshots" rows="4" placeholder="https://your-fdroid-repo/.../screenshot.png"></textarea>
+              </label>
+              <label class="admin-label admin-span-two" for="downloadUrl">Direct download URL
+                <input class="admin-input" id="downloadUrl" name="downloadUrl" maxlength="2000" placeholder="GitHub release, APK, or installer" />
+              </label>
+              <label class="admin-checkbox admin-span-two">
+                <input id="availableOnFdroid" name="availableOnFdroid" type="checkbox" />
+                <span>Available from our shared F-Droid repository</span>
+              </label>
+              <label class="admin-label admin-span-two" for="fdroidPackageName">F-Droid package ID <span>optional; used to sync repo metadata</span>
+                <input class="admin-input admin-mono" id="fdroidPackageName" name="fdroidPackageName" maxlength="255" placeholder="com.example.app" />
+              </label>
+              <label class="admin-label" for="playStoreUrl">Google Play URL
+                <input class="admin-input" id="playStoreUrl" name="playStoreUrl" maxlength="2000" />
+              </label>
+              <label class="admin-label" for="sourceUrl">Source repository URL
+                <input class="admin-input" id="sourceUrl" name="sourceUrl" maxlength="2000" />
+              </label>
+              <label class="admin-label" for="githubRepo">GitHub release source <span>owner/repository</span>
+                <input class="admin-input" id="githubRepo" name="githubRepo" maxlength="200" placeholder="DevCat-exe/Quick-Insure" />
+              </label>
+              <label class="admin-label" for="androidMinVersion">Minimum Android version
+                <input class="admin-input" id="androidMinVersion" name="androidMinVersion" maxlength="80" placeholder="Android 8.0+" />
+              </label>
+              <label class="admin-label" for="permissions">Permissions <span>one per line</span>
+                <textarea class="admin-input" id="permissions" name="permissions" rows="3"></textarea>
+              </label>
+              <label class="admin-label admin-span-two" for="privacyPolicy">Privacy policy
+                <textarea class="admin-input" id="privacyPolicy" name="privacyPolicy" rows="5" maxlength="20000"></textarea>
+              </label>
+              <label class="admin-checkbox admin-span-two">
+                <input id="isFeatured" name="isFeatured" type="checkbox" />
+                <span>Feature this app on the home page</span>
+              </label>
+              <div class="admin-form-actions admin-span-two">
+                <button id="save-app-button" class="button-primary button-large" type="submit">Save app details</button>
+                <span id="form-status" role="status" aria-live="polite"></span>
+              </div>
+          </form>
+        </section>
+
+        <details class="admin-settings-panel">
+          <summary><span><span class="eyebrow">Catalog setup</span><strong>Manage categories and platforms</strong></span><span class="settings-chevron" aria-hidden="true">⌄</span></summary>
+          <p class="admin-help">Add category choices for app listings and choose which platform chips are available in the editor.</p>
+          <form id="catalog-options-form" class="catalog-options-form">
+            <section class="catalog-option-section">
+              <div>
+                <h3>Categories</h3>
+                <p class="admin-help">Removing a category hides it as an editor choice; existing app assignments are unchanged.</p>
+              </div>
+              <div id="category-settings-list" class="admin-managed-options"></div>
+              <div class="admin-option-add">
+                <label class="sr-only" for="new-category">New category</label>
+                <input class="admin-input" id="new-category" maxlength="40" placeholder="Add a category" />
+                <button id="add-category-button" class="button-secondary" type="button">Add category</button>
+              </div>
+            </section>
+            <section class="catalog-option-section">
+              <div>
+                <h3>Platforms</h3>
+                <p class="admin-help">These become selectable platform chips when editing an app.</p>
+              </div>
+              <div id="platform-settings-list" class="admin-choice-list"></div>
+            </section>
+            <button class="button-secondary" type="submit">Save catalog options</button>
+          </form>
+          <p id="catalog-options-status" class="admin-help" role="status"></p>
+        </details>
+
+        <details class="admin-settings-panel">
+          <summary><span><span class="eyebrow">Set up once</span><strong>Shared F-Droid repository</strong></span><span class="settings-chevron" aria-hidden="true">⌄</span></summary>
+          <p class="admin-help">Your apps all use one F-Droid repo. Add its address and signing fingerprint here, then mark only the apps published there.</p>
+          <form id="fdroid-settings-form" class="admin-settings-form">
+            <label class="admin-label" for="fdroidRepoUrl">Repository address
+              <input class="admin-input" id="fdroidRepoUrl" name="fdroidRepoUrl" type="url" required />
+            </label>
+            <label class="admin-label" for="fdroidFingerprint">Repository SHA-256 fingerprint
+              <input class="admin-input admin-mono" id="fdroidFingerprint" name="fdroidFingerprint" required maxlength="95" />
+            </label>
+            <button class="button-secondary" type="submit">Save repo settings</button>
+          </form>
+          <p id="settings-status" class="admin-help" role="status"></p>
+        </details>
+      </section>
+      <p id="global-status" class="admin-toast" role="status" aria-live="polite"></p>
+    </main>
+
+    <script>
+      import type { AppRecord } from "../lib/apps";
+
+      const loginPanel = document.querySelector<HTMLElement>("#login-panel");
+      const managerPanel = document.querySelector<HTMLElement>("#manager-panel");
+      const loginForm = document.querySelector<HTMLFormElement>("#login-form");
+      const appForm = document.querySelector<HTMLFormElement>("#app-form");
+      const globalStatus = document.querySelector<HTMLElement>("#global-status");
+      const listStatus = document.querySelector<HTMLElement>("#list-status");
+      const formStatus = document.querySelector<HTMLElement>("#form-status");
+      const settingsStatus = document.querySelector<HTMLElement>("#settings-status");
+      const appList = document.querySelector<HTMLElement>("#app-list");
+      const appListSearch = document.querySelector<HTMLInputElement>("#app-list-search");
+      const editorPanel = document.querySelector<HTMLElement>("#editor-panel");
+      const saveButton = document.querySelector<HTMLButtonElement>("#save-app-button");
+      const editorTitle = document.querySelector<HTMLElement>("#editor-title");
+      const slugField = document.querySelector<HTMLInputElement>("#slug");
+      const settingsForm = document.querySelector<HTMLFormElement>("#fdroid-settings-form");
+      const catalogOptionsForm = document.querySelector<HTMLFormElement>("#catalog-options-form");
+      const categorySettingsList = document.querySelector<HTMLElement>("#category-settings-list");
+      const platformSettingsList = document.querySelector<HTMLElement>("#platform-settings-list");
+      const appPlatformChoices = document.querySelector<HTMLElement>("#app-platform-choices");
+      const appCategoryChoices = document.querySelector<HTMLElement>("#app-category-choices");
+      const newCategoryField = document.querySelector<HTMLInputElement>("#new-category");
+      const catalogOptionsStatus = document.querySelector<HTMLElement>("#catalog-options-status");
+      const platformChoices = ["android", "windows", "macos", "linux", "web", "ios"];
+      let catalogSettings = {
+        categories: ["Money", "Tools", "Productivity", "Health", "Education", "Travel", "Lifestyle", "Games", "Media", "Security", "Communication"],
+        platforms: [...platformChoices],
+      };
+      let apps: AppRecord[] = [];
+
+      const renderChoiceCheckboxes = (
+        container: HTMLElement | null,
+        name: string,
+        options: string[],
+        selectedValues: string[],
+      ) => {
+        if (!container) return;
+        container.replaceChildren();
+        const selected = new Set(selectedValues.map((value) => value.toLowerCase()));
+        for (const value of [...new Set(options)]) {
+          const label = document.createElement("label");
+          label.className = "admin-choice-chip";
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.name = name;
+          input.value = value;
+          input.checked = selected.has(value.toLowerCase());
+          const text = document.createElement("span");
+          const platformLabels: Record<string, string> = {
+            android: "Android",
+            windows: "Windows",
+            macos: "macOS",
+            linux: "Linux",
+            web: "Web",
+            ios: "iOS",
+          };
+          text.textContent = platformLabels[value.toLowerCase()] ??
+            value.replace(/\b\w/g, (letter) => letter.toUpperCase());
+          label.append(input, text);
+          container.append(label);
+        }
+      };
+
+      const checkedValues = (container: HTMLElement | null) =>
+        Array.from(container?.querySelectorAll<HTMLInputElement>('input[type="checkbox"]:checked') ?? [])
+          .map((input) => input.value);
+
+      const renderAppChoices = (selectedPlatforms: string[] = [], selectedCategories: string[] = []) => {
+        renderChoiceCheckboxes(
+          appPlatformChoices,
+          "app-platform",
+          [...catalogSettings.platforms, ...selectedPlatforms],
+          selectedPlatforms,
+        );
+        renderChoiceCheckboxes(
+          appCategoryChoices,
+          "app-category",
+          [...catalogSettings.categories, ...selectedCategories],
+          selectedCategories,
+        );
+      };
+
+      const renderCatalogSettings = () => {
+        const selectedPlatforms = checkedValues(appPlatformChoices);
+        const selectedCategories = checkedValues(appCategoryChoices);
+        if (categorySettingsList) {
+          categorySettingsList.replaceChildren();
+          for (const category of catalogSettings.categories) {
+            const chip = document.createElement("span");
+            chip.className = "admin-managed-option";
+            const label = document.createElement("span");
+            label.textContent = category;
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.textContent = "×";
+            remove.setAttribute("aria-label", `Remove ${category} category`);
+            remove.addEventListener("click", () => {
+              catalogSettings.categories = catalogSettings.categories.filter(
+                (item) => item.toLowerCase() !== category.toLowerCase(),
+              );
+              renderCatalogSettings();
+              renderAppChoices();
+            });
+            chip.append(label, remove);
+            categorySettingsList.append(chip);
+          }
+        }
+        renderChoiceCheckboxes(
+          platformSettingsList,
+          "settings-platform",
+          platformChoices,
+          catalogSettings.platforms,
+        );
+        renderAppChoices(selectedPlatforms, selectedCategories);
+      };
+
+      const showStatus = (message: string, error = false) => {
+        if (!globalStatus) return;
+        globalStatus.textContent = message;
+        globalStatus.classList.toggle("has-error", error);
+        globalStatus.classList.add("is-visible");
+        window.setTimeout(() => globalStatus.classList.remove("is-visible"), 4200);
+      };
+
+      const apiRequest = async (url: string, init?: RequestInit) => {
+        let response: Response;
+        try {
+          response = await fetch(url, { credentials: "same-origin", ...init });
+        } catch {
+          throw new Error("Could not reach the server. Check your internet connection.");
+        }
+        if (!response.ok) {
+          const message = await response.text();
+          throw new Error(message || `Request failed (${response.status}).`);
+        }
+        return response.status === 204 ? null : response.json();
+      };
+
+      const field = <T extends HTMLElement>(name: string) =>
+        appForm?.elements.namedItem(name) as T | null;
+
+      const resetEditor = () => {
+        appForm?.reset();
+        renderAppChoices();
+        if (editorPanel) editorPanel.hidden = true;
+        if (slugField) slugField.readOnly = false;
+        if (editorTitle) editorTitle.textContent = "Add an app";
+        if (saveButton) saveButton.textContent = "Save app details";
+        if (formStatus) formStatus.textContent = "";
+      };
+
+      const editApp = (app: AppRecord) => {
+        resetEditor();
+        if (editorPanel) editorPanel.hidden = false;
+        renderAppChoices(app.platforms, app.categories);
+        for (const name of [
+          "slug", "name", "summary", "description", "license",
+          "icon", "screenshots", "downloadUrl", "playStoreUrl",
+          "sourceUrl", "githubRepo", "fdroidPackageName", "androidMinVersion", "permissions", "privacyPolicy",
+        ]) {
+          const target = field<HTMLInputElement | HTMLTextAreaElement>(name);
+          if (!target) continue;
+          const value = app[name as keyof AppRecord];
+          target.value = Array.isArray(value) ? value.join("\n") : String(value ?? "");
+        }
+        const featured = field<HTMLInputElement>("isFeatured");
+        if (featured) featured.checked = app.isFeatured;
+        const fdroidAvailable = field<HTMLInputElement>("availableOnFdroid");
+        if (fdroidAvailable) fdroidAvailable.checked = app.availableOnFdroid;
+        if (slugField) slugField.readOnly = true;
+        if (editorTitle) editorTitle.textContent = `Edit ${app.name}`;
+        if (saveButton) saveButton.textContent = "Save changes";
+        appForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+      };
+
+      const renderApps = () => {
+        if (!appList) return;
+        appList.replaceChildren();
+        const term = appListSearch?.value.trim().toLowerCase() ?? "";
+        const visibleApps = apps.filter((app) =>
+          `${app.name} ${app.slug} ${app.version}`.toLowerCase().includes(term),
+        );
+        if (listStatus) {
+          listStatus.textContent = !apps.length
+            ? "No apps yet. Add your first app using the form."
+            : visibleApps.length
+              ? `${visibleApps.length} of ${apps.length} app${apps.length === 1 ? "" : "s"}`
+              : "No apps match that search.";
+        }
+        for (const app of visibleApps) {
+          const row = document.createElement("article");
+          row.className = "admin-app-row";
+          const details = document.createElement("div");
+          details.className = "min-w-0";
+          const name = document.createElement("strong");
+          name.textContent = app.name;
+          const meta = document.createElement("small");
+          meta.textContent = `${app.version ? `v${app.version} · ` : ""}${app.slug}`;
+          details.append(name, meta);
+          const actions = document.createElement("div");
+          actions.className = "admin-row-actions";
+          const edit = document.createElement("button");
+          edit.type = "button";
+          edit.className = "admin-small-button";
+          edit.textContent = "Edit";
+          edit.addEventListener("click", () => editApp(app));
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "admin-small-button is-danger";
+          remove.textContent = "Delete";
+          remove.addEventListener("click", async () => {
+            if (!window.confirm(`Delete ${app.name}? This removes its public page.`)) return;
+            remove.disabled = true;
+            try {
+              await apiRequest("/api/admin/apps", {
+                method: "DELETE",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ slug: app.slug }),
+              });
+              apps = apps.filter((item) => item.slug !== app.slug);
+              renderApps();
+              if (slugField?.value === app.slug) resetEditor();
+              showStatus(`${app.name} was deleted.`);
+            } catch (error) {
+              showStatus(error instanceof Error ? error.message : "Could not delete this app.", true);
+              remove.disabled = false;
+            }
+          });
+          actions.append(edit, remove);
+          row.append(details, actions);
+          appList.append(row);
+        }
+      };
+
+      const loadApps = async () => {
+        if (listStatus) listStatus.textContent = "Loading apps…";
+        try {
+          apps = await apiRequest("/api/admin/apps");
+          if (loginPanel) loginPanel.hidden = true;
+          if (managerPanel) managerPanel.hidden = false;
+          renderApps();
+        } catch (error) {
+          if (error instanceof Error && error.message.includes("Admin sign-in required")) {
+            if (loginPanel) loginPanel.hidden = false;
+            if (managerPanel) managerPanel.hidden = true;
+            return;
+          }
+          if (listStatus) listStatus.textContent = error instanceof Error ? error.message : "Could not load apps.";
+        }
+      };
+
+      const loadSettings = async () => {
+        try {
+          const settings = await apiRequest("/api/admin/settings");
+          const repoUrl = document.querySelector<HTMLInputElement>("#fdroidRepoUrl");
+          const fingerprint = document.querySelector<HTMLInputElement>("#fdroidFingerprint");
+          if (repoUrl) repoUrl.value = settings.fdroidRepoUrl;
+          if (fingerprint) fingerprint.value = settings.fdroidFingerprint;
+          catalogSettings = {
+            categories: settings.categories,
+            platforms: settings.platforms,
+          };
+          renderCatalogSettings();
+        } catch (error) {
+          if (settingsStatus) settingsStatus.textContent = error instanceof Error ? error.message : "Could not load repository settings.";
+        }
+      };
+
+      loginForm?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const password = document.querySelector<HTMLInputElement>("#admin-password");
+        const button = loginForm.querySelector<HTMLButtonElement>("button[type=submit]");
+        if (button) button.disabled = true;
+        try {
+          await apiRequest("/api/admin/login", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ password: password?.value ?? "" }),
+          });
+          if (password) password.value = "";
+          if (loginPanel) loginPanel.hidden = true;
+          if (managerPanel) managerPanel.hidden = false;
+          await loadApps();
+          await loadSettings();
+          showStatus("You’re signed in.");
+        } catch (error) {
+          showStatus(error instanceof Error ? error.message : "Sign-in failed.", true);
+        } finally {
+          if (button) button.disabled = false;
+        }
+      });
+
+      settingsForm?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const repoUrl = document.querySelector<HTMLInputElement>("#fdroidRepoUrl");
+        const fingerprint = document.querySelector<HTMLInputElement>("#fdroidFingerprint");
+        if (!repoUrl?.value || !fingerprint?.value) return;
+        const button = settingsForm.querySelector<HTMLButtonElement>("button[type=submit]");
+        if (button) button.disabled = true;
+        if (settingsStatus) settingsStatus.textContent = "";
+        try {
+          await apiRequest("/api/admin/settings", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              fdroidRepoUrl: repoUrl.value.trim(),
+              fdroidFingerprint: fingerprint.value.trim(),
+            }),
+          });
+          if (settingsStatus) settingsStatus.textContent = "Shared F-Droid details are saved.";
+          showStatus("F-Droid repository settings are saved.");
+        } catch (error) {
+          if (settingsStatus) settingsStatus.textContent = error instanceof Error ? error.message : "Could not save repository settings.";
+        } finally {
+          if (button) button.disabled = false;
+        }
+      });
+
+      document.querySelector("#add-category-button")?.addEventListener("click", () => {
+        const category = newCategoryField?.value.trim() ?? "";
+        if (!category) {
+          if (catalogOptionsStatus) catalogOptionsStatus.textContent = "Enter a category name first.";
+          return;
+        }
+        if (catalogSettings.categories.some((item) => item.toLowerCase() === category.toLowerCase())) {
+          if (catalogOptionsStatus) catalogOptionsStatus.textContent = "That category already exists.";
+          return;
+        }
+        catalogSettings.categories.push(category);
+        catalogSettings.categories.sort((a, b) => a.localeCompare(b));
+        if (newCategoryField) newCategoryField.value = "";
+        if (catalogOptionsStatus) catalogOptionsStatus.textContent = "";
+        renderCatalogSettings();
+      });
+
+      catalogOptionsForm?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = catalogOptionsForm.querySelector<HTMLButtonElement>('button[type="submit"]');
+        if (button) button.disabled = true;
+        if (catalogOptionsStatus) catalogOptionsStatus.textContent = "";
+        try {
+          const saved = await apiRequest("/api/admin/settings", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              categories: catalogSettings.categories,
+              platforms: checkedValues(platformSettingsList),
+            }),
+          });
+          catalogSettings = {
+            categories: saved.categories,
+            platforms: saved.platforms,
+          };
+          renderCatalogSettings();
+          if (catalogOptionsStatus) catalogOptionsStatus.textContent = "Catalog options are saved.";
+          showStatus("Category and platform options are saved.");
+        } catch (error) {
+          if (catalogOptionsStatus) catalogOptionsStatus.textContent = error instanceof Error ? error.message : "Could not save catalog options.";
+        } finally {
+          if (button) button.disabled = false;
+        }
+      });
+
+      appForm?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!appForm.reportValidity()) return;
+        const value = (name: string) => field<HTMLInputElement | HTMLTextAreaElement>(name)?.value.trim() ?? "";
+        const lines = (name: string) =>
+          value(name).split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+        const payload = {
+          slug: value("slug"),
+          name: value("name"),
+          summary: value("summary"),
+          description: value("description"),
+          platforms: checkedValues(appPlatformChoices),
+          categories: checkedValues(appCategoryChoices),
+          license: value("license"),
+          icon: value("icon"),
+          screenshots: lines("screenshots"),
+          downloadUrl: value("downloadUrl"),
+          availableOnFdroid: field<HTMLInputElement>("availableOnFdroid")?.checked ?? false,
+          playStoreUrl: value("playStoreUrl"),
+          sourceUrl: value("sourceUrl"),
+          githubRepo: value("githubRepo"),
+          fdroidPackageName: value("fdroidPackageName"),
+          androidMinVersion: value("androidMinVersion"),
+          permissions: lines("permissions"),
+          privacyPolicy: value("privacyPolicy"),
+          isFeatured: field<HTMLInputElement>("isFeatured")?.checked ?? false,
+        };
+        if (saveButton) {
+          saveButton.disabled = true;
+          saveButton.textContent = "Saving…";
+        }
+        if (formStatus) formStatus.textContent = "";
+        try {
+          const saved = await apiRequest("/api/admin/apps", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(payload),
+          }) as AppRecord;
+          apps = [saved, ...apps.filter((app) => app.slug !== saved.slug)].sort((a, b) =>
+            Number(b.isFeatured) - Number(a.isFeatured) || a.name.localeCompare(b.name),
+          );
+          renderApps();
+          resetEditor();
+          showStatus(`${saved.name} is saved and live.`);
+        } catch (error) {
+          if (formStatus) formStatus.textContent = error instanceof Error ? error.message : "Could not save this app.";
+          showStatus("The app could not be saved.", true);
+        } finally {
+          if (saveButton) saveButton.disabled = false;
+          if (saveButton) saveButton.textContent = slugField?.readOnly ? "Save changes" : "Save app details";
+        }
+      });
+
+      document.querySelector("#new-app-button")?.addEventListener("click", () => {
+        resetEditor();
+        if (editorPanel) {
+          editorPanel.hidden = false;
+          editorPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+      document.querySelector("#cancel-edit-button")?.addEventListener("click", resetEditor);
+      document.querySelector("#refresh-apps")?.addEventListener("click", loadApps);
+      appListSearch?.addEventListener("input", renderApps);
+      document.querySelector("#logout-button")?.addEventListener("click", async () => {
+        try {
+          await apiRequest("/api/admin/logout", { method: "POST" });
+          if (managerPanel) managerPanel.hidden = true;
+          if (loginPanel) loginPanel.hidden = false;
+          resetEditor();
+          showStatus("You’re signed out.");
+        } catch (error) {
+          showStatus(error instanceof Error ? error.message : "Sign-out failed.", true);
+        }
+      });
+
+      loadApps().then(() => {
+        if (managerPanel && !managerPanel.hidden) void loadSettings();
+      });
+    </script>
+    <script is:inline>
+      (() => {
+        const applyTheme = (theme) => {
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.classList.toggle("dark", theme === "dark");
+          document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+            button.setAttribute(
+              "aria-label",
+              theme === "dark" ? "Switch to light mode" : "Switch to dark mode",
+            );
+          });
+        };
+        try {
+          applyTheme(localStorage.getItem("devcat-theme") === "dark" ? "dark" : "light");
+        } catch {
+          applyTheme("light");
+        }
+        document.addEventListener("click", (event) => {
+          const target = event.target;
+          if (!(target instanceof Element) || !target.closest("[data-theme-toggle]")) return;
+          const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+          applyTheme(theme);
+          try {
+            localStorage.setItem("devcat-theme", theme);
+          } catch {
+            // Theme still works for this page if browser storage is unavailable.
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

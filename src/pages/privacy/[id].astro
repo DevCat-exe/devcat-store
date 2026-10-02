@@ -1,0 +1,81 @@
+---
+import { ArrowLeft, ExternalLink, ShieldCheck } from "@lucide/astro";
+import Header from "../../components/Header.astro";
+import { getAppBySlug, type AppRecord } from "../../lib/apps";
+import { renderMarkdown } from "../../lib/markdown";
+import "../../styles/global.css";
+
+let app: AppRecord | null = null;
+let catalogError = "";
+
+try {
+  app = await getAppBySlug(Astro.params.id ?? "");
+} catch (error) {
+  console.error(`Unable to load privacy information for "${Astro.params.id}":`, error);
+  Astro.response.status = 503;
+  catalogError = "Privacy information is temporarily unavailable. Please try again shortly.";
+}
+
+if (!app && !catalogError) Astro.response.status = 404;
+const policyHtml = app?.privacyPolicy ? renderMarkdown(app.privacyPolicy) : "";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={app ? `Privacy policy for ${app.name}.` : "Privacy information for Devcat apps."} />
+    <meta name="theme-color" content="#f7f8f6" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <title>{app ? `Privacy — ${app.name}` : "Privacy — Devcat"}</title>
+  </head>
+  <body>
+    <Header currentPath="/privacy" />
+    <main class="privacy-main">
+      <a class="back-link" href={app ? `/apps/${app.slug}` : "/apps"}>
+        <ArrowLeft class="size-4" aria-hidden="true" /> {app ? `Back to ${app.name}` : "All apps"}
+      </a>
+      {
+        catalogError ? (
+          <div class="catalog-alert mt-8" role="alert">{catalogError}</div>
+        ) : app ? (
+          <article class="privacy-document">
+            <div class="privacy-document-icon"><ShieldCheck class="size-6" aria-hidden="true" /></div>
+            <span class="eyebrow">Privacy information</span>
+            <h1>{app.name}</h1>
+            <p class="privacy-lead">A plain-language place to understand this app’s privacy practices.</p>
+            <div class="privacy-content">
+              {
+                policyHtml ? (
+                  <div class="markdown-body policy-text" set:html={policyHtml} />
+                ) : (
+                  <div class="policy-missing">
+                    <strong>A privacy policy hasn’t been published yet.</strong>
+                    <p>Please check back later or visit the app’s source repository for the latest information.</p>
+                    {
+                      app.sourceUrl && (
+                        <a class="text-link mt-3" href={app.sourceUrl} target="_blank" rel="noopener noreferrer">
+                          Visit source repository <ExternalLink class="size-4" aria-hidden="true" />
+                        </a>
+                      )
+                    }
+                  </div>
+                )
+              }
+            </div>
+            <p class="privacy-updated">Policy details are maintained by the app publisher.</p>
+          </article>
+        ) : (
+          <section class="not-found">
+            <span class="eyebrow">Privacy hub</span>
+            <h1>Choose an app to view its policy.</h1>
+            <p>Each app’s privacy details are published on its own page.</p>
+            <a class="button-primary mt-5" href="/apps">Explore apps</a>
+          </section>
+        )
+      }
+    </main>
+    <footer class="site-footer"><div class="site-footer-inner"><a class="brand" href="/"><span class="brand-mark">D</span><span>Devcat<span class="brand-dot">.</span></span></a><p>Privacy should be easy to find.</p><a href="/apps">All apps</a></div></footer>
+  </body>
+</html>

@@ -1,0 +1,345 @@
+---
+import { ArrowLeft, ArrowUpRight, Download, ShieldCheck } from "@lucide/astro";
+import AppHeader from "../../components/AppHeader.astro";
+import Header from "../../components/Header.astro";
+import ScreenshotGallery from "../../components/ScreenshotGallery.astro";
+import { getAppBySlug, type AppRecord } from "../../lib/apps";
+import { renderMarkdown } from "../../lib/markdown";
+import "../../styles/global.css";
+
+let app: AppRecord | null = null;
+let catalogError = "";
+try {
+  app = await getAppBySlug(Astro.params.id ?? "");
+} catch (error) {
+  console.error(`Unable to load app "${Astro.params.id}" from Turso:`, error);
+  Astro.response.status = 503;
+  catalogError = "App details are temporarily unavailable. Please try again shortly.";
+}
+
+if (!app && !catalogError) Astro.response.status = 404;
+const releaseHistory = app
+  ? app.releaseHistory.length
+    ? app.releaseHistory
+    : app.releaseTag
+      ? [
+          {
+            version: app.version,
+            tag: app.releaseTag,
+            versionCode: 0,
+            publishedAt: app.releasePublishedAt,
+            url: app.releaseUrl,
+            notes: app.releaseNotes,
+            isPrerelease: app.releaseIsPrerelease,
+            source: "github" as const,
+            sizeBytes: app.sizeBytes,
+            sha256: app.releaseAssets[0]?.sha256 ?? "",
+          },
+        ]
+      : []
+  : [];
+
+function formatReleaseDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf())
+    ? value
+    : new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).format(date);
+}
+
+const permissionCatalog: Record<string, { label: string; description: string; sensitive?: boolean }> = {
+  INTERNET: {
+    label: "Internet access",
+    description: "Connect to online services and download content.",
+  },
+  REQUEST_INSTALL_PACKAGES: {
+    label: "Install apps",
+    description: "Request installation of APK files, such as app updates.",
+    sensitive: true,
+  },
+  READ_EXTERNAL_STORAGE: {
+    label: "Read shared files",
+    description: "Access shared files on older Android versions.",
+  },
+  READ_MEDIA_IMAGES: {
+    label: "Access images",
+    description: "Read images you select or make available to the app.",
+  },
+  READ_MEDIA_VIDEO: {
+    label: "Access videos",
+    description: "Read video files you select or make available to the app.",
+  },
+  READ_MEDIA_AUDIO: {
+    label: "Access audio",
+    description: "Read audio files you select or make available to the app.",
+  },
+};
+const permissionItems = app?.permissions.map((name) => {
+  const knownPermission = permissionCatalog[name];
+  if (knownPermission) return { name, ...knownPermission };
+  if (name.endsWith(".DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION")) {
+    return {
+      name,
+      label: "Android system integration",
+      description: "An internal permission used to safely register app notifications.",
+    };
+  }
+  const label = name
+    .split(".")
+    .at(-1)!
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
+  return {
+    name,
+    label,
+    description: "An additional permission requested by this app.",
+  };
+}) ?? [];
+
+function releaseItemClass(index: number, total: number) {
+  return [
+    "release-timeline-item",
+    index === 0 ? "is-current" : "",
+    index === 2 && total > 3 ? "is-faded" : "",
+  ].filter(Boolean).join(" ");
+}
+
+function releaseMarkerClass(index: number) {
+  return index === 0
+    ? "release-timeline-marker is-current"
+    : "release-timeline-marker";
+}
+
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={app?.summary ?? "App details from Devcat."} />
+    <meta name="theme-color" content="#f7f8f6" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <title>{app ? `${app.name} — Devcat` : "App unavailable — Devcat"}</title>
+  </head>
+  <body>
+    <Header currentPath="/apps" />
+    <main class="detail-main">
+      <a class="back-link" href="/apps"><ArrowLeft class="size-4" aria-hidden="true" /> All apps</a>
+      {
+        catalogError ? (
+          <div class="catalog-alert mt-8" role="alert">{catalogError}</div>
+        ) : app ? (
+          <>
+            <AppHeader app={app} />
+            <ScreenshotGallery screenshots={app.screenshots} appName={app.name} />
+
+            <div class="detail-columns">
+              <div class="detail-primary-column">
+                <section class="detail-panel">
+                  <span class="eyebrow">About the app</span>
+                  <h2>Simple to understand. Useful to have.</h2>
+                  <p class="body-copy">{app.description || app.summary}</p>
+                </section>
+
+                <section class="detail-panel">
+                  <div class="section-heading">
+                    <div>
+                      <span class="eyebrow">The story so far</span>
+                      <h2>Version history</h2>
+                    </div>
+                    <span class="release-history-count">{releaseHistory.length} release{releaseHistory.length === 1 ? "" : "s"}</span>
+                  </div>
+                  {
+                    releaseHistory.length ? (
+                      <div class="release-history">
+                        <ol id="release-history-list" class="release-timeline">
+                          {releaseHistory.slice(0, 30).map((release, index) => (
+                          <li
+                            class={releaseItemClass(index, releaseHistory.length)}
+                            hidden={index > 2}
+                          >
+                            <span class={releaseMarkerClass(index)} aria-hidden="true" />
+                            <div class="release-timeline-content">
+                              <div class="release-timeline-heading">
+                                <div>
+                                  <h3>{/^\d/.test(release.version) ? `v${release.version}` : release.version}</h3>
+                                  {release.tag && release.tag !== `v${release.version}` && <span class="release-tag">{release.tag}</span>}
+                                </div>
+                                <div class="release-timeline-meta">
+                                  <span class:list={["release-channel", release.isPrerelease ? "is-prerelease" : "is-stable"]}>
+                                    {release.isPrerelease ? "Pre-release" : "Stable"}
+                                  </span>
+                                  {release.publishedAt && <time datetime={release.publishedAt}>{formatReleaseDate(release.publishedAt)}</time>}
+                                </div>
+                              </div>
+                              {release.notes ? (
+                                <details class="release-entry-notes">
+                                  <summary>{index === 0 ? "Read release notes" : "What changed"}</summary>
+                                  <div class="markdown-body release-notes" set:html={renderMarkdown(release.notes)} />
+                                </details>
+                              ) : (
+                                <p class="release-entry-empty">No changelog was published for this version.</p>
+                              )}
+                              {release.sha256 && (
+                                <details class="asset-checksum">
+                                  <summary>GitHub file SHA-256</summary>
+                                  <code>{release.sha256}</code>
+                                </details>
+                              )}
+                              {release.fdroidSha256 && (
+                                <details class="asset-checksum">
+                                  <summary>F-Droid APK SHA-256</summary>
+                                  <code>{release.fdroidSha256}</code>
+                                </details>
+                              )}
+                              <div class="release-entry-links">
+                                {release.url && (
+                                  <a class="release-entry-link" href={release.url} target="_blank" rel="noopener noreferrer">
+                                    {release.source === "fdroid" ? "Download from F-Droid" : "View GitHub release"}
+                                    <ArrowUpRight class="size-3.5" aria-hidden="true" />
+                                  </a>
+                                )}
+                                {release.fdroidUrl && release.source !== "fdroid" && (
+                                  <a class="release-entry-link" href={release.fdroidUrl} target="_blank" rel="noopener noreferrer">
+                                    F-Droid APK <ArrowUpRight class="size-3.5" aria-hidden="true" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </li>
+                          ))}
+                        </ol>
+                        {releaseHistory.length > 3 && (
+                          <button
+                            class="release-history-toggle"
+                            type="button"
+                            data-release-history-toggle
+                            data-count={Math.min(releaseHistory.length, 30)}
+                            aria-controls="release-history-list"
+                            aria-expanded="false"
+                          >
+                            Show full history ({Math.min(releaseHistory.length, 30)} versions)
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <p class="body-copy">Release history hasn’t been synced yet.</p>
+                    )
+                  }
+                </section>
+
+                {
+                  app.releaseAssets.length > 0 && (
+                    <section class="detail-panel">
+                      <span class="eyebrow">Downloads</span>
+                      <h2>Choose a file</h2>
+                      <ul class="asset-list">
+                        {app.releaseAssets.map((asset) => (
+                          <li class="asset-row">
+                            <div class="min-w-0">
+                              <p class="asset-name">{asset.name}</p>
+                              <p class="asset-meta">
+                                {asset.size ? `${(asset.size / 1024 / 1024).toFixed(1)} MB` : "Size not available"}
+                                {asset.downloadCount ? ` · ${asset.downloadCount.toLocaleString()} downloads` : ""}
+                              </p>
+                              {asset.sha256 && <details class="asset-checksum"><summary>SHA-256</summary><code>{asset.sha256}</code></details>}
+                            </div>
+                            <a class="button-secondary" href={asset.url} target="_blank" rel="noopener noreferrer">
+                              <Download class="size-4" aria-hidden="true" /> Download
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )
+                }
+              </div>
+
+              <aside class="detail-sidebar">
+                <section class="detail-panel">
+                  <span class="eyebrow">At a glance</span>
+                  <dl class="metadata-list">
+                    <div><dt>Platform</dt><dd>{app.platforms.join(", ") || "Not specified"}</dd></div>
+                    <div><dt>Version</dt><dd>{app.version || "Not available"}</dd></div>
+                    <div><dt>File size</dt><dd>{app.size || "Not available"}</dd></div>
+                    <div><dt>License</dt><dd>{app.license || "Not specified"}</dd></div>
+                    {app.androidMinVersion && <div><dt>Android version</dt><dd>{app.androidMinVersion}</dd></div>}
+                    {app.releaseDownloadsCount > 0 && <div><dt>Release downloads</dt><dd>{app.releaseDownloadsCount.toLocaleString()}</dd></div>}
+                  </dl>
+                  {
+                    app.sourceUrl && (
+                      <a class="text-link mt-5" href={app.sourceUrl} target="_blank" rel="noopener noreferrer">
+                        Visit source code <ArrowUpRight class="size-4" aria-hidden="true" />
+                      </a>
+                    )
+                  }
+                </section>
+
+                {
+                  app.permissions.length > 0 && (
+                    <section class="detail-panel">
+                      <span class="eyebrow">App permissions</span>
+                      <h2>What it may access</h2>
+                      <p class="permission-intro">Access requested by this app. Android may show different prompts depending on your version.</p>
+                      <ul class="permission-list">
+                        {permissionItems.map((permission) => (
+                          <li class:list={{ "is-sensitive": permission.sensitive }}>
+                            <div class="permission-item-heading">
+                              <strong>{permission.label}</strong>
+                              {permission.sensitive && <span>Sensitive</span>}
+                            </div>
+                            <p>{permission.description}</p>
+                            {!permissionCatalog[permission.name] && <code>{permission.name}</code>}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )
+                }
+
+                <a class="privacy-card" href={`/privacy/${app.slug}`}>
+                  <ShieldCheck class="size-5 shrink-0" aria-hidden="true" />
+                  <span><strong>Privacy, clearly.</strong><small>Read how {app.name} handles your data.</small></span>
+                  <ArrowUpRight class="size-4 shrink-0" aria-hidden="true" />
+                </a>
+              </aside>
+            </div>
+          </>
+        ) : (
+          <section class="not-found">
+            <span class="eyebrow">We couldn’t find that app</span>
+            <h1>This page may have moved.</h1>
+            <p>Head back to the app collection to find something else.</p>
+            <a class="button-primary mt-5" href="/apps">Browse all apps <ArrowLeft class="size-4 rotate-180" aria-hidden="true" /></a>
+          </section>
+        )
+      }
+    </main>
+    <script>
+      const historyToggle = document.querySelector<HTMLButtonElement>(
+        "[data-release-history-toggle]",
+      );
+      const historyList = document.querySelector<HTMLOListElement>(
+        "#release-history-list",
+      );
+      historyToggle?.addEventListener("click", () => {
+        const expanded = historyToggle.getAttribute("aria-expanded") !== "true";
+        const count = Number(historyToggle.dataset.count) || 0;
+        historyToggle.setAttribute("aria-expanded", String(expanded));
+        historyToggle.textContent = expanded
+          ? "Show fewer versions"
+          : `Show full history (${count} versions)`;
+        historyList?.querySelectorAll<HTMLElement>(".release-timeline-item").forEach((item, index) => {
+          item.hidden = !expanded && index > 2;
+          item.classList.toggle("is-faded", !expanded && index === 2);
+        });
+      });
+    </script>
+    <footer class="site-footer"><div class="site-footer-inner"><a class="brand" href="/"><span class="brand-mark">D</span><span>Devcat<span class="brand-dot">.</span></span></a><p>Useful apps, with the details out in the open.</p><a href="/apps">All apps</a></div></footer>
+  </body>
+</html>

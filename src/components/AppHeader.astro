@@ -1,0 +1,77 @@
+---
+import { ArrowUpRight, Download, ShieldCheck, Smartphone } from "@lucide/astro";
+import { formatPlatformLabel, type AppRecord } from "../lib/apps";
+
+export interface Props {
+  app: AppRecord;
+}
+
+const { app } = Astro.props;
+const directDownload = app.downloadUrl || app.releaseAssets[0]?.url;
+---
+
+<section class="app-detail-heading">
+  <div class="flex items-start gap-5">
+    <div class="app-detail-icon">
+      {
+        app.icon ? (
+          <img src={app.icon} alt="" class="size-full object-cover" />
+        ) : (
+          <Smartphone class="size-9 text-primary" aria-hidden="true" />
+        )
+      }
+    </div>
+    <div class="min-w-0 flex-1">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="eyebrow"><span class="eyebrow-dot"></span> Devcat app</span>
+        {app.isFeatured && <span class="eyebrow-chip">Featured</span>}
+      </div>
+      <h1>{app.name}</h1>
+      <p class="app-detail-summary">{app.summary}</p>
+      <div class="mt-4 flex flex-wrap gap-2">
+        {app.platforms.map((platform) => <span class="platform-chip">{formatPlatformLabel(platform)}</span>)}
+        {app.categories.map((category) => <span class="category-chip">{category}</span>)}
+        {app.license && <span class="platform-chip">{app.license}</span>}
+        {app.version && <span class="platform-chip">Version {app.version}</span>}
+        {app.version && (
+          <span class:list={["release-channel", app.releaseIsPrerelease ? "is-prerelease" : "is-stable"]}>
+            {app.releaseIsPrerelease ? "Pre-release" : "Stable"}
+          </span>
+        )}
+      </div>
+    </div>
+  </div>
+  <div class="app-detail-actions">
+    {
+      directDownload && (
+        <a href={directDownload} class="button-primary button-large" target="_blank" rel="noopener noreferrer">
+          <Download class="size-4" aria-hidden="true" /> Download
+        </a>
+      )
+    }
+    {
+      app.playStoreUrl && (
+        <a href={app.playStoreUrl} class="button-secondary button-large" target="_blank" rel="noopener noreferrer">
+          Google Play <ArrowUpRight class="size-4" aria-hidden="true" />
+        </a>
+      )
+    }
+    {
+      !directDownload && !app.playStoreUrl && (
+        <span class="button-secondary button-large" aria-label="No download is currently available">
+          Coming soon
+        </span>
+      )
+    }
+    {
+      app.availableOnFdroid && (
+        <a href="/fdroid" class="text-link">
+          Get it through F-Droid <ArrowUpRight class="size-4" aria-hidden="true" />
+        </a>
+      )
+    }
+    <a class="privacy-link" href={`/privacy/${app.slug}`}>
+      <ShieldCheck class="size-4" aria-hidden="true" /> Privacy information
+    </a>
+  </div>
+</section>

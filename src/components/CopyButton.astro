@@ -1,0 +1,40 @@
+---
+export interface Props {
+  text: string;
+  label?: string;
+}
+
+import { Copy, Check } from "@lucide/astro";
+
+const { text, label = "Copy" } = Astro.props;
+---
+
+<button
+  class="text-primary hover:text-primary/80 flex items-center gap-1 text-xs font-bold copy-btn transition-colors"
+  data-text={text}
+  data-label={label}
+>
+  <Copy class="w-4 h-4" />
+  {label}
+</button>
+
+<script>
+  document.querySelectorAll(".copy-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const text = btn.getAttribute("data-text");
+      const label = btn.getAttribute("data-label");
+
+      if (text) {
+        navigator.clipboard.writeText(text).then(() => {
+          window.dispatchEvent(
+            new CustomEvent("toast", {
+              detail: {
+                message: `Copied ${label === "Copy" ? "to clipboard" : label}!`,
+              },
+            }),
+          );
+        });
+      }
+    });
+  });
+</script>
