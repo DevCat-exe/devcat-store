@@ -68,7 +68,7 @@ The app form supports:
 - Android minimum version, selectable common permissions (with an optional field for other identifiers), and privacy policy
 - Featured home-page listing and optional GitHub release source
 
-Screenshot fields accept one URL or path per line. App pages and privacy pages use the slug, for example `/apps/quick-insure` and `/privacy/quick-insure`. To publish a policy, enter its text in the app editor. The site-wide appearance switch remembers a visitor's dark/light preference. Public visitors can only read catalog entries; create, edit, and delete operations require the admin session.
+Screenshot fields accept one URL or path per line. App pages and privacy pages use the slug, for example `/apps/quick-insure` and `/privacy/quick-insure`. To publish a policy, enter its text in the app editor. The site-wide appearance switch remembers a visitor's dark/light preference. Interface motion is subtle and respects the system reduced-motion preference. Public visitors can only read catalog entries; create, edit, and delete operations require the admin session.
 
 ## Release metadata automation
 
