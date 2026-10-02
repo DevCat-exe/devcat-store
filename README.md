@@ -21,7 +21,7 @@ npm run db:init
 npm run dev
 ```
 
-The development command loads `.env` automatically. The ignored local `.env` contains your admin password and should never be committed. When `TURSO_DATABASE_URL` is set to `file:./local.db`, the app uses a local SQLite file. The database init command creates the catalog/settings tables without inserting demo listings. Add your first real app through `/admin`; existing database records are never overwritten by initialization. Visit the URL printed by Astro and use `/apps` to browse the catalog.
+The development command loads `.env` automatically. Open `.env` locally to copy your `ADMIN_PASSWORD` for `/admin`; change it there whenever you want a new password. The ignored local `.env` contains credentials and should never be committed. When `TURSO_DATABASE_URL` is set to `file:./local.db`, the app uses a local SQLite file. The database init command creates the catalog/settings tables without inserting demo listings. Add your first real app through `/admin`; existing database records are never overwritten by initialization. Visit the URL printed by Astro and use `/apps` to browse the catalog.
 
 To create a random session secret in PowerShell:
 
