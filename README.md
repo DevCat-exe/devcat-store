@@ -15,13 +15,13 @@ Requirements: Node.js 20.19+ or 22.12+ and npm.
 
 ```powershell
 npm install
+Copy-Item .env.example .env
+# Edit .env and set a private ADMIN_PASSWORD (16+ characters)
 npm run db:init
-$env:ADMIN_PASSWORD = "a-local-password-at-least-16-characters"
-$env:ADMIN_SESSION_SECRET = "a-random-local-secret-at-least-32-characters"
 npm run dev
 ```
 
-When `TURSO_DATABASE_URL` is not set, the app uses a local SQLite file at `local.db`. The database init command creates the catalog/settings tables without inserting demo listings. Add your first real app through `/admin`; existing database records are never overwritten by initialization. Visit the URL printed by Astro and use `/apps` to browse the catalog.
+The development command loads `.env` automatically. The ignored local `.env` contains your admin password and should never be committed. When `TURSO_DATABASE_URL` is set to `file:./local.db`, the app uses a local SQLite file. The database init command creates the catalog/settings tables without inserting demo listings. Add your first real app through `/admin`; existing database records are never overwritten by initialization. Visit the URL printed by Astro and use `/apps` to browse the catalog.
 
 To create a random session secret in PowerShell:
 
