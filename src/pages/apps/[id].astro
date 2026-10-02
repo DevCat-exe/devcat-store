@@ -1,5 +1,5 @@
 ---
-import { ArrowLeft, ArrowUpRight, Download, ShieldCheck } from "@lucide/astro";
+import { ArrowDownToLine, ArrowLeft, ArrowUpRight, ChevronDown, Download, Monitor, ShieldCheck, Smartphone } from "@lucide/astro";
 import AppHeader from "../../components/AppHeader.astro";
 import Header from "../../components/Header.astro";
 import ScreenshotGallery from "../../components/ScreenshotGallery.astro";
@@ -15,13 +15,6 @@ try {
   console.error(`Unable to load app "${Astro.params.id}" from Turso:`, error);
   Astro.response.status = 503;
   catalogError = "App details are temporarily unavailable. Please try again shortly.";
-}
-
-function downloadVersionClass(index: number, total: number) {
-  return [
-    "download-version",
-    index === 2 && total > 3 ? "is-faded" : "",
-  ].filter(Boolean).join(" ");
 }
 
 function groupDownloadAssets(assets: ReleaseAsset[]) {
@@ -45,6 +38,24 @@ function groupDownloadAssets(assets: ReleaseAsset[]) {
   return [...groups.entries()]
     .sort(([left], [right]) => order.indexOf(left) - order.indexOf(right))
     .map(([platform, platformAssets]) => ({ platform, assets: platformAssets }));
+}
+
+function getPrimaryPlatformAsset(platform: string, assets: ReleaseAsset[]) {
+  if (platform === "Android") {
+    return assets.find((asset) => asset.source === "github") ?? assets[0];
+  }
+  if (platform === "Windows") {
+    return assets.find((asset) => /\.(exe|msi)$/i.test(asset.name)) ?? assets[0];
+  }
+  return assets[0];
+}
+
+function getPlatformLabel(platform: string) {
+  return platform === "Other" ? "Downloads" : platform;
+}
+
+function formatAssetSize(bytes: number) {
+  return bytes > 0 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : "File download";
 }
 
 if (!app && !catalogError) Astro.response.status = 404;
@@ -93,6 +104,20 @@ const downloadableReleases = releaseHistory
     assets: getReleaseAssets(release, index),
   }))
   .filter((entry) => entry.assets.length > 0);
+const latestDownload = downloadableReleases[0];
+const latestDownloadAssets = latestDownload?.assets ?? (
+  app?.downloadUrl
+    ? [{
+        name: app.version ? `${app.name} ${app.version}` : `${app.name} installer`,
+        url: app.downloadUrl,
+        size: app.sizeBytes,
+        downloadCount: 0,
+        sha256: "",
+      }]
+    : []
+);
+const latestDownloadGroups = groupDownloadAssets(latestDownloadAssets);
+const otherDownloadableReleases = downloadableReleases.slice(1);
 
 function formatReleaseDate(value: string) {
   const date = new Date(value);
@@ -289,93 +314,135 @@ function releaseMarkerClass(index: number) {
                 </section>
 
                 {
-                  (downloadableReleases.length > 0 || app.downloadUrl) && (
+                  latestDownloadGroups.length > 0 && (
                     <section id="downloads" class="detail-panel download-panel">
-                      <div class="section-heading">
+                      <div class="latest-download-heading">
                         <div>
-                          <span class="eyebrow">Downloads</span>
-                          <h2>Choose a version and file</h2>
+                          <span class="eyebrow">Get {app.name}</span>
+                          <h2>Download {app.version ? `v${app.version}` : "the latest version"}</h2>
+                          <p>Choose your platform. Downloads start right away.</p>
                         </div>
-                        <span class="release-history-count">{downloadableReleases.length || 1} version{(downloadableReleases.length || 1) === 1 ? "" : "s"}</span>
+                        {latestDownload && (
+                          <span class:list={["release-channel", latestDownload.release.isPrerelease ? "is-prerelease" : "is-stable"]}>
+                            {latestDownload.release.isPrerelease ? "Pre-release" : "Stable"}
+                          </span>
+                        )}
                       </div>
-                      <div id="download-version-list" class="download-version-list">
-                        {downloadableReleases.map(({ release, assets }, index) => (
-                          <details
-                            class={downloadVersionClass(index, downloadableReleases.length)}
-                            open={index === 0}
-                            hidden={index > 2}
-                          >
-                            <summary>
-                              <span>
-                                <strong>Version {/^\d/.test(release.version) ? `v${release.version}` : release.version}</strong>
-                                {release.publishedAt && <time datetime={release.publishedAt}>{formatReleaseDate(release.publishedAt)}</time>}
-                              </span>
-                              <span class:list={["release-channel", release.isPrerelease ? "is-prerelease" : "is-stable"]}>
-                                {release.isPrerelease ? "Pre-release" : "Stable"}
-                              </span>
-                            </summary>
-                            <div class="download-platform-groups">
-                              {groupDownloadAssets(assets).map(({ platform, assets: platformAssets }) => (
-                                <section class="download-platform-group" aria-label={`${platform} downloads`}>
-                                  <h4>{platform}</h4>
-                                  <ul class="asset-list">
-                                    {platformAssets.map((asset) => (
-                                      <li class="asset-row">
-                                        <div class="min-w-0">
-                                          <p class="asset-name">{asset.name}</p>
-                                          <p class="asset-meta">
-                                            {asset.source === "fdroid" ? "F-Droid" : asset.source === "github" ? "GitHub release" : ""}
-                                            {asset.size ? `${asset.source ? " · " : ""}${(asset.size / 1024 / 1024).toFixed(1)} MB` : ""}
-                                            {asset.downloadCount ? ` · ${asset.downloadCount.toLocaleString()} downloads` : ""}
-                                            {!asset.size && !asset.downloadCount && !asset.source ? "Size not available" : ""}
-                                          </p>
-                                          {asset.sha256 && (
-                                            <details class="asset-checksum">
-                                              <summary>SHA-256{asset.source === "fdroid" ? " (F-Droid APK)" : ""}</summary>
-                                              <code>{asset.sha256}</code>
-                                            </details>
-                                          )}
-                                        </div>
-                                        <a class="button-secondary" href={asset.url} target="_blank" rel="noopener noreferrer">
-                                          <Download class="size-4" aria-hidden="true" /> Download
+                      <div class="latest-download-grid">
+                        {latestDownloadGroups.map(({ platform, assets: platformAssets }) => {
+                          const primaryAsset = getPrimaryPlatformAsset(platform, platformAssets);
+                          const alternateAssets = platformAssets.filter((asset) => asset !== primaryAsset);
+                          return (
+                            <article class="latest-platform-card">
+                              <div class="latest-platform-icon" aria-hidden="true">
+                                {platform === "Android" ? (
+                                  <Smartphone class="size-6" />
+                                ) : platform === "Windows" ? (
+                                  <Monitor class="size-6" />
+                                ) : (
+                                  <Download class="size-6" />
+                                )}
+                              </div>
+                              <h3>{getPlatformLabel(platform)}</h3>
+                              <p class="latest-platform-meta">
+                                {formatAssetSize(primaryAsset.size)}
+                                {primaryAsset.downloadCount ? ` · ${primaryAsset.downloadCount.toLocaleString()} downloads` : ""}
+                              </p>
+                              <a class="latest-download-button" href={primaryAsset.url} target="_blank" rel="noopener noreferrer">
+                                <ArrowDownToLine class="size-4" aria-hidden="true" />
+                                {platform === "Android" ? "Download APK" : platform === "Windows" ? "Download installer" : "Download"}
+                              </a>
+                              {primaryAsset.sha256 && (
+                                <details class="asset-checksum latest-checksum">
+                                  <summary>SHA-256</summary>
+                                  <code>{primaryAsset.sha256}</code>
+                                </details>
+                              )}
+                              {alternateAssets.length > 0 || (platform === "Android" && app.availableOnFdroid) ? (
+                                <details class="platform-alternates">
+                                  <summary>Other downloads <ChevronDown class="size-3.5" aria-hidden="true" /></summary>
+                                  <ul>
+                                    {alternateAssets.map((asset) => (
+                                      <li>
+                                        <a href={asset.url} target="_blank" rel="noopener noreferrer">
+                                          <span>
+                                            {asset.source === "fdroid" ? "F-Droid APK" : asset.name}
+                                            <small>{formatAssetSize(asset.size)}</small>
+                                          </span>
+                                          <ArrowUpRight class="size-3.5" aria-hidden="true" />
                                         </a>
+                                        {asset.sha256 && (
+                                          <details class="asset-checksum">
+                                            <summary>SHA-256</summary>
+                                            <code>{asset.sha256}</code>
+                                          </details>
+                                        )}
                                       </li>
                                     ))}
+                                    {platform === "Android" && app.availableOnFdroid && (
+                                      <li>
+                                        <a href="/fdroid">
+                                          <span>Get it through F-Droid<small>Repository and install instructions</small></span>
+                                          <ArrowUpRight class="size-3.5" aria-hidden="true" />
+                                        </a>
+                                      </li>
+                                    )}
                                   </ul>
-                                </section>
-                              ))}
-                            </div>
-                          </details>
-                        ))}
-                        {downloadableReleases.length > 3 && (
-                          <button
-                            class="release-history-toggle"
-                            type="button"
-                            data-download-history-toggle
-                            data-count={downloadableReleases.length}
-                            aria-controls="download-version-list"
-                            aria-expanded="false"
-                          >
-                            Show all download versions ({downloadableReleases.length})
-                          </button>
-                        )}
-                        {!downloadableReleases.length && app.downloadUrl && (
-                          <div class="download-version download-fallback">
-                            <h3>{app.version ? `Version ${app.version}` : "Direct download"}</h3>
-                            <ul class="asset-list">
-                              <li class="asset-row">
-                                <div class="min-w-0">
-                                  <p class="asset-name">{app.version ? `${app.name} ${app.version}` : `${app.name} installer`}</p>
-                                  <p class="asset-meta">Manually configured download</p>
-                                </div>
-                                <a class="button-secondary" href={app.downloadUrl} target="_blank" rel="noopener noreferrer">
-                                  <Download class="size-4" aria-hidden="true" /> Download
-                                </a>
-                              </li>
-                            </ul>
-                          </div>
-                        )}
+                                </details>
+                              ) : (
+                                <span class="single-build-label">Single build</span>
+                              )}
+                            </article>
+                          );
+                        })}
                       </div>
+                      {otherDownloadableReleases.length > 0 && (
+                        <details class="other-versions">
+                          <summary>
+                            <span>Other versions</span>
+                            <small>{otherDownloadableReleases.length} earlier releases</small>
+                            <ChevronDown class="size-4" aria-hidden="true" />
+                          </summary>
+                          <div class="other-versions-list">
+                            {otherDownloadableReleases.map(({ release, assets }) => (
+                              <details class="other-version">
+                                <summary>
+                                  <span>
+                                    <strong>Version {/^\d/.test(release.version) ? `v${release.version}` : release.version}</strong>
+                                    {release.publishedAt && <time datetime={release.publishedAt}>{formatReleaseDate(release.publishedAt)}</time>}
+                                  </span>
+                                  <span class:list={["release-channel", release.isPrerelease ? "is-prerelease" : "is-stable"]}>
+                                    {release.isPrerelease ? "Pre-release" : "Stable"}
+                                  </span>
+                                  <ChevronDown class="size-4" aria-hidden="true" />
+                                </summary>
+                                <ul class="asset-list">
+                                  {assets.map((asset) => (
+                                    <li class="asset-row">
+                                      <div class="min-w-0">
+                                        <p class="asset-name">{asset.name}</p>
+                                        <p class="asset-meta">
+                                          {asset.source === "fdroid" ? "F-Droid" : asset.source === "github" ? "GitHub" : ""}
+                                          {asset.size ? `${asset.source ? " · " : ""}${formatAssetSize(asset.size)}` : ""}
+                                        </p>
+                                        {asset.sha256 && (
+                                          <details class="asset-checksum">
+                                            <summary>SHA-256</summary>
+                                            <code>{asset.sha256}</code>
+                                          </details>
+                                        )}
+                                      </div>
+                                      <a class="button-secondary" href={asset.url} target="_blank" rel="noopener noreferrer">
+                                        <Download class="size-4" aria-hidden="true" /> Download
+                                      </a>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </details>
+                            ))}
+                          </div>
+                        </details>
+                      )}
                     </section>
                   )
                 }
@@ -459,26 +526,6 @@ function releaseMarkerClass(index: number) {
           item.hidden = !expanded && index > 2;
           item.classList.toggle("is-faded", !expanded && index === 2);
         });
-      });
-      const downloadHistoryToggle = document.querySelector<HTMLButtonElement>(
-        "[data-download-history-toggle]",
-      );
-      const downloadVersionList = document.querySelector<HTMLElement>(
-        "#download-version-list",
-      );
-      downloadHistoryToggle?.addEventListener("click", () => {
-        const expanded = downloadHistoryToggle.getAttribute("aria-expanded") !== "true";
-        const count = Number(downloadHistoryToggle.dataset.count) || 0;
-        downloadHistoryToggle.setAttribute("aria-expanded", String(expanded));
-        downloadHistoryToggle.textContent = expanded
-          ? "Show fewer download versions"
-          : `Show all download versions (${count})`;
-        downloadVersionList
-          ?.querySelectorAll<HTMLElement>(".download-version")
-          .forEach((item, index) => {
-            item.hidden = !expanded && index > 2;
-            item.classList.toggle("is-faded", !expanded && index === 2);
-          });
       });
     </script>
     <footer class="site-footer"><div class="site-footer-inner"><a class="brand" href="/"><span class="brand-mark">D</span><span>Devcat<span class="brand-dot">.</span></span></a><p>Useful apps, with the details out in the open.</p><a href="/apps">All apps</a></div></footer>
