@@ -1,9 +1,29 @@
 ---
-import { ArrowUpRight, Download, Smartphone } from "@lucide/astro";
+import { ArrowUpRight, Download, Monitor, Smartphone } from "@lucide/astro";
 import { formatPlatformLabel, type AppRecord } from "../lib/apps";
 
 const { app } = Astro.props as { app: AppRecord };
-const directDownload = app.downloadUrl || app.releaseAssets[0]?.url;
+const platforms = new Set(app.platforms.map((platform) => platform.toLowerCase()));
+const releaseAssets = app.releaseAssets.length
+  ? app.releaseAssets
+  : app.releaseHistory[0]?.assets ?? [];
+const androidAsset =
+  releaseAssets.find((asset) => asset.source === "github" && /\.apk$/i.test(asset.name)) ??
+  releaseAssets.find((asset) => /\.apk$/i.test(asset.name));
+const windowsAsset =
+  releaseAssets.find((asset) => asset.source === "github" && /\.exe$/i.test(asset.name)) ??
+  releaseAssets.find((asset) => /\.exe$/i.test(asset.name)) ??
+  releaseAssets.find((asset) => /\.msi$/i.test(asset.name));
+const androidDownload =
+  androidAsset?.url ??
+  (platforms.has("android") && app.downloadUrl && !/\.(exe|msi)(?:$|[?#])/i.test(app.downloadUrl)
+    ? app.downloadUrl
+    : undefined);
+const windowsDownload =
+  windowsAsset?.url ??
+  app.windowsDownloadUrl ??
+  (platforms.has("windows") && !platforms.has("android") ? app.downloadUrl : undefined);
+const hasDirectDownload = androidDownload || windowsDownload;
 ---
 
 <article
@@ -65,15 +85,28 @@ const directDownload = app.downloadUrl || app.releaseAssets[0]?.url;
 
   <div class="mt-5 flex flex-wrap gap-2">
     {
-      directDownload && (
+      androidDownload && (
         <a
-          href={directDownload}
-          class="button-primary"
+          href={androidDownload}
+          class="button-primary app-card-download"
           target="_blank"
           rel="noopener noreferrer"
         >
           <Download class="size-4" aria-hidden="true" />
-          Direct download
+          Android APK
+        </a>
+      )
+    }
+    {
+      windowsDownload && (
+        <a
+          href={windowsDownload}
+          class="button-primary app-card-download"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Monitor class="size-4" aria-hidden="true" />
+          Windows installer
         </a>
       )
     }
@@ -91,7 +124,7 @@ const directDownload = app.downloadUrl || app.releaseAssets[0]?.url;
       )
     }
     {
-      !directDownload && !app.playStoreUrl && (
+      !hasDirectDownload && !app.playStoreUrl && (
         <a href={`/apps/${app.slug}`} class="button-secondary">
           Explore app
           <ArrowUpRight class="size-4" aria-hidden="true" />

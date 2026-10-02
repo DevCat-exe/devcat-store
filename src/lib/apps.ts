@@ -41,6 +41,7 @@ export interface AppRecord {
   icon: string;
   screenshots: string[];
   downloadUrl: string;
+  windowsDownloadUrl: string;
   availableOnFdroid: boolean;
   fdroidPackageName: string;
   playStoreUrl: string;
@@ -73,6 +74,7 @@ export type EditableApp = Pick<
   | "icon"
   | "screenshots"
   | "downloadUrl"
+  | "windowsDownloadUrl"
   | "availableOnFdroid"
   | "fdroidPackageName"
   | "playStoreUrl"
@@ -105,6 +107,8 @@ function parseRecord(value: unknown): AppRecord {
     categories: Array.isArray(app.categories) ? app.categories : [],
     fdroidPackageName:
       typeof app.fdroidPackageName === "string" ? app.fdroidPackageName : "",
+    windowsDownloadUrl:
+      typeof app.windowsDownloadUrl === "string" ? app.windowsDownloadUrl : "",
     releaseIsPrerelease: app.releaseIsPrerelease === true,
     releaseHistory: Array.isArray(app.releaseHistory) ? app.releaseHistory : [],
     availableOnFdroid:
@@ -214,6 +218,7 @@ export function validateEditableApp(value: unknown):
     "description",
     "icon",
     "downloadUrl",
+    "windowsDownloadUrl",
     "playStoreUrl",
     "sourceUrl",
     "license",
@@ -229,6 +234,7 @@ export function validateEditableApp(value: unknown):
     description: 10000,
     icon: 2000,
     downloadUrl: 2000,
+    windowsDownloadUrl: 2000,
     playStoreUrl: 2000,
     sourceUrl: 2000,
     license: 100,
@@ -269,6 +275,7 @@ export function validateEditableApp(value: unknown):
   for (const field of [
     "icon",
     "downloadUrl",
+    "windowsDownloadUrl",
     "playStoreUrl",
     "sourceUrl",
   ] as const) {

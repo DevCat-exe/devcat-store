@@ -96,6 +96,9 @@ import "../styles/global.css";
               <label class="admin-label admin-span-two" for="downloadUrl">Fallback download URL <span>Optional; use when this app has no synced releases</span>
                 <input class="admin-input" id="downloadUrl" name="downloadUrl" maxlength="2000" placeholder="Direct APK, installer, or stable download page" />
               </label>
+              <label class="admin-label admin-span-two" for="windowsDownloadUrl">Windows installer fallback <span>Optional; release assets are synced automatically</span>
+                <input class="admin-input" id="windowsDownloadUrl" name="windowsDownloadUrl" maxlength="2000" placeholder="https://example.com/app-installer.exe" />
+              </label>
               <label class="admin-checkbox admin-span-two">
                 <input id="availableOnFdroid" name="availableOnFdroid" type="checkbox" />
                 <span>Available from our shared F-Droid repository</span>
@@ -128,7 +131,7 @@ import "../styles/global.css";
               </label>
               <label class="admin-checkbox admin-span-two">
                 <input id="isFeatured" name="isFeatured" type="checkbox" />
-                <span>Feature this app on the home page</span>
+                <span>Feature this app on the home page <small>The first featured app is shown in the homepage highlight.</small></span>
               </label>
               <div class="admin-form-actions admin-span-two">
                 <button id="save-app-button" class="button-primary button-large" type="submit">Save app details</button>
@@ -389,7 +392,7 @@ import "../styles/global.css";
         }
         for (const name of [
           "slug", "name", "summary", "description", "license",
-          "icon", "screenshots", "downloadUrl", "playStoreUrl",
+          "icon", "screenshots", "downloadUrl", "windowsDownloadUrl", "playStoreUrl",
           "sourceUrl", "githubRepo", "fdroidPackageName", "androidMinVersion", "privacyPolicy",
         ]) {
           const target = field<HTMLInputElement | HTMLTextAreaElement>(name);
@@ -612,6 +615,7 @@ import "../styles/global.css";
           icon: value("icon"),
           screenshots: lines("screenshots"),
           downloadUrl: value("downloadUrl"),
+          windowsDownloadUrl: value("windowsDownloadUrl"),
           availableOnFdroid: field<HTMLInputElement>("availableOnFdroid")?.checked ?? false,
           playStoreUrl: value("playStoreUrl"),
           sourceUrl: value("sourceUrl"),

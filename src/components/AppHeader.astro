@@ -26,21 +26,21 @@ const hasDownloads =
     </div>
     <div class="min-w-0 flex-1">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="eyebrow"><span class="eyebrow-dot"></span> Devcat app</span>
         {app.isFeatured && <span class="eyebrow-chip">Featured</span>}
       </div>
       <h1>{app.name}</h1>
       <p class="app-detail-summary">{app.summary}</p>
-      <div class="mt-4 flex flex-wrap gap-2">
+      <div class="app-detail-badges flex flex-wrap gap-2">
         {app.platforms.map((platform) => <span class="platform-chip">{formatPlatformLabel(platform)}</span>)}
         {app.categories.map((category) => <span class="category-chip">{category}</span>)}
-        {app.license && <span class="platform-chip">{app.license}</span>}
-        {app.version && <span class="platform-chip">Version {app.version}</span>}
-        {app.version && (
-          <span class:list={["release-channel", app.releaseIsPrerelease ? "is-prerelease" : "is-stable"]}>
-            {app.releaseIsPrerelease ? "Pre-release" : "Stable"}
-          </span>
-        )}
+        <span class="app-detail-release-badges">
+          {app.version && <span class="platform-chip">Version {app.version}</span>}
+          {app.version && (
+            <span class:list={["release-channel", app.releaseIsPrerelease ? "is-prerelease" : "is-stable"]}>
+              {app.releaseIsPrerelease ? "Pre-release" : "Stable"}
+            </span>
+          )}
+        </span>
       </div>
     </div>
   </div>

@@ -180,6 +180,7 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .button-primary:hover { transform: translateY(-1px); background: var(--green-dark); box-shadow: 0 7px 18px rgba(47, 129, 114, 0.2); }
 .button-secondary { border: 1px solid var(--line); background: #fff; color: #41504a; }
 .button-secondary:hover { border-color: #b8cec4; background: #f6faf7; color: var(--green-dark); }
+.app-card-download { flex: 1 1 138px; min-height: 40px; padding: 9px 10px; gap: 6px; font-size: 10px; white-space: nowrap; }
 .button-large { min-height: 48px; padding: 12px 18px; border-radius: 13px; font-size: 13px; }
 .text-link {
   display: inline-flex;
@@ -321,6 +322,8 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 .app-detail-icon { display: grid; width: 86px; height: 86px; flex: 0 0 auto; place-items: center; overflow: hidden; border-radius: 21px; background: #eff5f1; }
 .app-detail-heading h1 { margin: 8px 0 5px; font-family: Manrope, sans-serif; font-size: clamp(26px, 4vw, 40px); font-weight: 800; letter-spacing: -0.06em; line-height: 1.1; }
 .app-detail-summary { max-width: 630px; margin: 0; color: #69766f; font-size: 13px; line-height: 1.65; }
+.app-detail-badges { margin-top: 13px; }
+.app-detail-release-badges { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .app-detail-actions { display: flex; min-width: 165px; flex-direction: column; align-items: stretch; gap: 8px; }
 .app-detail-actions .text-link, .privacy-link { justify-content: center; padding: 5px 0; }
 .privacy-link { display: inline-flex; align-items: center; gap: 6px; color: #65756d; font-size: 10px; font-weight: 700; }
@@ -611,10 +614,14 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   .filter-button { padding: 8px 11px; }
   .catalog-count { margin-top: 17px; }
   .catalog-section { margin-bottom: 58px; }
-  .app-detail-heading { margin-top: 22px; padding: 18px; align-items: stretch; flex-direction: column; }
-  .app-detail-heading > div:first-child { gap: 13px; }
-  .app-detail-icon { width: 63px; height: 63px; border-radius: 17px; }
-  .app-detail-summary { font-size: 12px; }
+  .app-detail-heading { margin-top: 18px; padding: 16px; align-items: stretch; flex-direction: column; gap: 16px; border-radius: 18px; }
+  .app-detail-heading > div:first-child { gap: 11px; }
+  .app-detail-icon { width: 56px; height: 56px; border-radius: 15px; }
+  .app-detail-heading h1 { margin-top: 6px; font-size: clamp(24px, 7vw, 32px); }
+  .app-detail-summary { font-size: 11px; line-height: 1.55; }
+  .app-detail-badges { margin-top: 10px; gap: 5px; }
+  .app-detail-badges .platform-chip, .app-detail-badges .category-chip { padding: 4px 7px; font-size: 8px; }
+  .app-detail-release-badges { gap: 5px; }
   .app-detail-actions { display: grid; min-width: 0; grid-template-columns: 1fr 1fr; }
   .app-detail-actions > .text-link, .app-detail-actions > .privacy-link { grid-column: span 2; }
   .screenshot-section { padding: 17px; }
@@ -645,6 +652,17 @@ a:focus-visible, button:focus-visible, input:focus-visible {
   .admin-title-row { align-items: flex-start; }
   .admin-title-row h1 { font-size: 32px; }
   .admin-login { margin-top: 28px; padding: 24px; }
+}
+@media (max-width: 380px) {
+  .app-detail-heading { padding: 14px; gap: 14px; }
+  .app-detail-heading > div:first-child { gap: 9px; }
+  .app-detail-icon { width: 48px; height: 48px; border-radius: 13px; }
+  .app-detail-heading h1 { font-size: 24px; }
+  .app-detail-summary { font-size: 10px; }
+  .app-detail-actions { gap: 7px; }
+  .app-detail-actions .button-large { min-height: 43px; padding: 9px 8px; font-size: 11px; }
+  .latest-download-grid { grid-template-columns: 1fr; }
+  .latest-platform-card { padding: 16px; }
 }
 
 .fdroid-page { width: min(1040px, calc(100% - 48px)); min-height: calc(100vh - 170px); margin: auto; padding: 62px 0 80px; }
